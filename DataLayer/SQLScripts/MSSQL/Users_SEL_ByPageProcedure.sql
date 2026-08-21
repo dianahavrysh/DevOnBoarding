@@ -9,11 +9,12 @@ BEGIN
 		u.Email,
 		u.Password,
 		u.ActiveStatus,
-		u.RoleTypePK,
+		r.RoleName AS RoleName,
 		ud.FirstName,
 		ud.LastName,
 		ud.BirthDate
 	FROM dbo.Users u
+	LEFT JOIN dbo.RoleTypes r ON u.RoleTypePK = r.RoleTypePK
 	LEFT JOIN dbo.UserData ud ON u.UserPK = ud.UserPK;
 END;
 GO
