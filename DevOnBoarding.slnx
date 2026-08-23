@@ -1,4 +1,7 @@
 <Solution>
+  <Project Path="API/API.csproj" />
+  <Project Path="BusinessLogic/BusinessLogic.csproj" />
+  <Project Path="Common/Common.csproj" />
   <Project Path="DataLayer/DataLayer.csproj" Id="ee98bba9-4efd-4513-b8e4-447c81bd2eac" />
-  <Project Path="DevOnBoarding/DevOnBoarding.csproj" />
+  <Project Path="Services/Services.csproj" />
 </Solution>
