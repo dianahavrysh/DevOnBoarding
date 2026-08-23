@@ -1,21 +1,20 @@
-CREATE PROCEDURE  dbo.Users_UPD
-	@UserPK INT,
-	@UserName VARCHAR(50),
-	@Email VARCHAR(50),
+CREATE PROCEDURE dbo.Users_UPD
+	@UserPK UNIQUEIDENTIFIER,
+	@UserName NVARCHAR(50),
+	@Email NVARCHAR(50),
 	@Password VARCHAR(50),
 	@ActiveStatus BIT,
-	@RoleTypePK TINYINT,
-	@FirstName VARCHAR(50),
-	@SecondName VARCHAR(50) = NULL,
-	@BirthDate DATETIME2(7) = NULL,
-	@NewUserPK INT OUTPUT
+	@RoleTypePK UNIQUEIDENTIFIER,
+	@FirstName NVARCHAR(50),
+	@SecondName NVARCHAR(50) = NULL,
+	@BirthDate DATETIME2(7) = NULL
 AS
-BEGIN 
+BEGIN
 	SET NOCOUNT ON;
 	BEGIN TRANSACTION;
 	BEGIN TRY
-		UPDATE dbo.Users 
-		SET 
+		UPDATE dbo.Users
+		SET
 			UserName = @UserName,
 			Email = @Email,
 			Password = @Password,
@@ -25,7 +24,7 @@ BEGIN
 
 		IF EXISTS (SELECT 1 FROM dbo.UserData WHERE UserPK = @UserPK)
 		BEGIN
-			UPDATE dbo.UserData 
+			UPDATE dbo.UserData
 			SET
 				FirstName = @FirstName,
 				SecondName = @SecondName,
@@ -34,14 +33,14 @@ BEGIN
 		END
 		ELSE
 		BEGIN
-			INSERT INTO dbo.UserData (UserPK, FirstName, SecondName, BirthDate) 
+			INSERT INTO dbo.UserData (UserPK, FirstName, SecondName, BirthDate)
 			VALUES (@UserPK, @FirstName, @SecondName, @BirthDate);
 		END
 
 		COMMIT TRANSACTION;
 	END TRY
-	BEGIN CATCH 
-		ROLLBACK TRANSACTION;
+	BEGIN CATCH
+		IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
 		THROW;
 	END CATCH
 END;

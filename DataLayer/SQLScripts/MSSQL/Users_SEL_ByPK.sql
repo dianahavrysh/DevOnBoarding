@@ -1,10 +1,10 @@
-CREATE PROCEDURE  dbo.Users_SEL_ByPK
-	@UserPK INT
+CREATE PROCEDURE dbo.Users_SEL_ByPK
+	@UserPK UNIQUEIDENTIFIER
 AS
-BEGIN 
+BEGIN
 	SET NOCOUNT ON;
 
-	SELECT 
+	SELECT
 		u.UserPK,
 		u.UserName,
 		u.Email,
@@ -12,7 +12,7 @@ BEGIN
 		u.ActiveStatus,
 		r.RoleName AS RoleName,
 		ud.FirstName,
-		ud.LastName,
+		ud.SecondName AS LastName,
 		ud.BirthDate
 	FROM dbo.Users u
 	LEFT JOIN dbo.RoleTypes r ON u.RoleTypePK = r.RoleTypePK
