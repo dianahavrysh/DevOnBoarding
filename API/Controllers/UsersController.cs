@@ -25,22 +25,24 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetByPage([FromQuery] int currentPage = 1, [FromQuery] int pageSize = 20)
-        {
+        public IActionResult GetByPage(
+        [FromQuery] Guid requestingUserPK,
+        [FromQuery] int currentPage = 1,
+        [FromQuery] int pageSize = 20) {
             var totalRows = 0;
-            var results = _service.GetByPage(Guid.Empty, currentPage, pageSize, null, null, null, false, false, out totalRows);
+            var results = _service.GetByPage(requestingUserPK, currentPage, pageSize, null, null, null, false, false, out totalRows);
             return Ok(new { TotalRows = totalRows, Items = results });
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] UserDTO dto)
+        public IActionResult Create([FromBody] UserCreateUpdateDTO dto)
         {
             var id = _service.Create(dto);
             return CreatedAtAction(nameof(GetByPK), new { id }, null);
         }
 
         [HttpPut("{id}")]
-        public IActionResult Update(Guid id, [FromBody] UserDTO dto)
+        public IActionResult Update(Guid id, [FromBody] UserCreateUpdateDTO dto)
         {
             try
             {
