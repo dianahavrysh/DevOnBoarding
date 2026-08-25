@@ -8,13 +8,25 @@ using System.Data;
 using System.Threading.Tasks;
 
 namespace BusinessLogic {
+    /// <summary>
+    /// Business logic implementation for user operations. This class delegates to the data layer for persistence.
+    /// </summary>
     public class UsersManager : IUsersManager {
         private readonly IDatabaseFactory _factory;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="UsersManager"/>.
+        /// </summary>
+        /// <param name="factory">Database factory used to create provider-specific database instances.</param>
         public UsersManager(IDatabaseFactory factory) {
             _factory = factory;
         }
 
+        /// <summary>
+        /// Insert a new user record.
+        /// </summary>
+        /// <param name="user">The user entity to insert.</param>
+        /// <returns>The <see cref="Guid"/> primary key of the newly created user, or <see cref="Guid.Empty"/> on failure.</returns>
         public Guid Insert(User user) {
             using var db = _factory.CreateDatabase();
 
@@ -37,6 +49,10 @@ namespace BusinessLogic {
             return Guid.TryParse(obj.ToString(), out var g) ? g : Guid.Empty;
         }
 
+        /// <summary>
+        /// Update an existing user record.
+        /// </summary>
+        /// <param name="user">User entity with updated values.</param>
         public void Update(User user) {
             using var db = _factory.CreateDatabase();
 
@@ -57,6 +73,10 @@ namespace BusinessLogic {
               .GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Delete a user by primary key.
+        /// </summary>
+        /// <param name="userPK">User primary key to delete.</param>
         public void Delete(Guid userPK) {
             using var db = _factory.CreateDatabase();
 
@@ -69,6 +89,11 @@ namespace BusinessLogic {
               .GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Get a user entity by primary key.
+        /// </summary>
+        /// <param name="userPK">User primary key.</param>
+        /// <returns>The <see cref="User"/> if found; otherwise <c>null</c>.</returns>
         public User? GetByPK(Guid userPK) {
             using var db = _factory.CreateDatabase();
 
@@ -90,6 +115,19 @@ namespace BusinessLogic {
             return null;
         }
 
+        /// <summary>
+        /// Retrieve a paginated list of users.
+        /// </summary>
+        /// <param name="requestingUserPK">The requesting user's primary key (for permission / filtering).</param>
+        /// <param name="currentPage">Current page number (1-based).</param>
+        /// <param name="pageSize">Number of items per page.</param>
+        /// <param name="sortExpression">Optional sort expression.</param>
+        /// <param name="searchValue">Optional search text.</param>
+        /// <param name="searchByFields">Optional per-field search flags.</param>
+        /// <param name="includeInactive">Whether to include inactive users.</param>
+        /// <param name="strictMatch">Whether to use strict matching for search.</param>
+        /// <param name="totalRows">Output total number of rows matching the filter.</param>
+        /// <returns>Sequence of <see cref="User"/> matching the criteria.</returns>
         public IEnumerable<User> GetByPage(
             Guid requestingUserPK,
             int currentPage,
