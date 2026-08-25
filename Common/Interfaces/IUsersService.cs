@@ -14,9 +14,9 @@ namespace Common.Interfaces
 
         IEnumerable<UserDTO> GetByPage(Guid requestingUserPK, int currentPage, int pageSize, string? sortExpression, string? searchValue, Dictionary<string, bool>? searchByFields, bool includeInactive, bool strictMatch, out int totalRows);
 
-        Guid Create(UserDTO dto);
+        Guid Create(UserCreateUpdateDTO dto);
 
-        void Update(Guid userPK, UserDTO dto);
+        void Update(Guid userPK, UserCreateUpdateDTO dto);
 
         void Delete(Guid userPK);
     }

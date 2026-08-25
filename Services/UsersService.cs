@@ -15,17 +15,18 @@ namespace Services
             _manager = manager;
         }
 
-        public Guid Create(UserDTO dto)
+        public Guid Create(UserCreateUpdateDTO dto)
         {
-            // map DTO to entity and call manager insert
+            
             var user = new User
             {
-                UserPK = dto.UserPK == Guid.Empty ? Guid.NewGuid() : dto.UserPK,
+                UserPK = Guid.NewGuid(),
                 UserName = dto.UserName,
                 Email = dto.Email,
-                Password = string.Empty, // password should be provided elsewhere and hashed
+                Password = dto.Password,
                 ActiveStatus = dto.ActiveStatus,
-                RoleName = dto.RoleName,
+                RoleTypePK = dto.RoleTypePK,
+                RoleName = string.Empty,
                 FirstName = dto.FirstName,
                 SecondName = dto.LastName,
                 BirthDate = dto.BirthDate
@@ -55,15 +56,17 @@ namespace Services
             return list;
         }
 
-        public void Update(Guid userPK, UserDTO dto)
+        public void Update(Guid userPK, UserCreateUpdateDTO dto)
         {
             var existing = _manager.GetByPK(userPK);
             if (existing == null) throw new ArgumentException("User not found", nameof(userPK));
 
             existing.UserName = dto.UserName;
             existing.Email = dto.Email;
+            existing.Password = dto.Password;
             existing.ActiveStatus = dto.ActiveStatus;
-            existing.RoleName = dto.RoleName;
+            existing.RoleTypePK = dto.RoleTypePK;
+            // RoleName is not provided in write DTO; keep existing or set empty
             existing.FirstName = dto.FirstName;
             existing.SecondName = dto.LastName;
             existing.BirthDate = dto.BirthDate;
@@ -87,3 +90,4 @@ namespace Services
         }
     }
 }
+

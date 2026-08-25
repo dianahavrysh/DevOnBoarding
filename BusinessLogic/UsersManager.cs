@@ -1,26 +1,23 @@
+using Common;
 using Common.Entities;
 using Common.Interfaces;
-using Common;
+using Common.Database;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 
-namespace BusinessLogic
-{
-    public class UsersManager : IUsersManager
-    {
+namespace BusinessLogic {
+    public class UsersManager : IUsersManager {
         private readonly IDatabaseFactory _factory;
 
-        public UsersManager(IDatabaseFactory factory)
-        {
+        public UsersManager(IDatabaseFactory factory) {
             _factory = factory;
         }
 
-        public Guid Insert(User user)
-        {
+        public Guid Insert(User user) {
             using var db = _factory.CreateDatabase();
-            // Assume stored procedure Users_INS returns new UserPK as scalar
+
             var parameters = new List<IDataParameter>
             {
                 db.CreateParameter("@UserName", user.UserName),
@@ -28,20 +25,21 @@ namespace BusinessLogic
                 db.CreateParameter("@Password", user.Password),
                 db.CreateParameter("@ActiveStatus", user.ActiveStatus),
                 db.CreateParameter("@RoleTypePK", user.RoleTypePK),
-                db.CreateParameter("@RoleName", user.RoleName),
                 db.CreateParameter("@FirstName", user.FirstName),
                 db.CreateParameter("@SecondName", user.SecondName ?? (object)DBNull.Value),
                 db.CreateParameter("@BirthDate", user.BirthDate ?? (object)DBNull.Value)
             };
 
-            var obj = db.ExecuteScalarAsync("Users_INS", CommandType.StoredProcedure, parameters).GetAwaiter().GetResult();
+            var obj = db.ExecuteScalarAsync("Users_INS", CommandType.StoredProcedure, parameters)
+                         .GetAwaiter().GetResult();
+
             if (obj == null || obj == DBNull.Value) return Guid.Empty;
             return Guid.TryParse(obj.ToString(), out var g) ? g : Guid.Empty;
         }
 
-        public void Update(User user)
-        {
+        public void Update(User user) {
             using var db = _factory.CreateDatabase();
+
             var parameters = new List<IDataParameter>
             {
                 db.CreateParameter("@UserPK", user.UserPK),
@@ -50,60 +48,61 @@ namespace BusinessLogic
                 db.CreateParameter("@Password", user.Password),
                 db.CreateParameter("@ActiveStatus", user.ActiveStatus),
                 db.CreateParameter("@RoleTypePK", user.RoleTypePK),
-                db.CreateParameter("@RoleName", user.RoleName),
                 db.CreateParameter("@FirstName", user.FirstName),
                 db.CreateParameter("@SecondName", user.SecondName ?? (object)DBNull.Value),
                 db.CreateParameter("@BirthDate", user.BirthDate ?? (object)DBNull.Value)
             };
 
-            db.ExecuteNonQueryAsync("Users_UPD", CommandType.StoredProcedure, parameters).GetAwaiter().GetResult();
+            db.ExecuteNonQueryAsync("Users_UPD", CommandType.StoredProcedure, parameters)
+              .GetAwaiter().GetResult();
         }
 
-        public void Delete(Guid userPK)
-        {
+        public void Delete(Guid userPK) {
             using var db = _factory.CreateDatabase();
-            var parameters = new List<IDataParameter>
-            {
-                db.CreateParameter("@UserPK", userPK)
-            };
-            db.ExecuteNonQueryAsync("Users_DEL", CommandType.StoredProcedure, parameters).GetAwaiter().GetResult();
-        }
 
-        public User? GetByPK(Guid userPK)
-        {
-            using var db = _factory.CreateDatabase();
             var parameters = new List<IDataParameter>
             {
                 db.CreateParameter("@UserPK", userPK)
             };
 
-            using var reader = db.ExecuteReaderAsync("Users_SEL_ByPK", CommandType.StoredProcedure, parameters).GetAwaiter().GetResult();
-            if (reader.Read())
+            db.ExecuteNonQueryAsync("Users_DEL", CommandType.StoredProcedure, parameters)
+              .GetAwaiter().GetResult();
+        }
+
+        public User? GetByPK(Guid userPK) {
+            using var db = _factory.CreateDatabase();
+
+            var parameters = new List<IDataParameter>
             {
-                var u = new User
-                {
-                    UserPK = reader.GetValue<Guid>("UserPK"),
-                    UserName = reader.GetValue<string>("UserName"),
-                    Email = reader.GetValue<string>("Email"),
-                    Password = reader.GetValue<string>("Password"),
-                    ActiveStatus = reader.GetValue<bool>("ActiveStatus"),
-                    RoleTypePK = reader.GetValue<Guid>("RoleTypePK"),
-                    RoleName = reader.GetValue<string>("RoleName"),
-                    FirstName = reader.GetValue<string>("FirstName"),
-                    SecondName = reader.GetValue<string?>("SecondName"),
-                    BirthDate = reader.GetValue<DateTime?>("BirthDate")
-                };
+                db.CreateParameter("@UserPK", userPK)
+            };
+
+            using var reader = db.ExecuteReaderAsync("Users_SEL_ByPK", CommandType.StoredProcedure, parameters)
+                                  .GetAwaiter().GetResult();
+
+            if (reader.Read()) {
+                var user = MapUser(reader);
                 reader.Close();
-                return u;
+                return user;
             }
+
             reader.Close();
             return null;
         }
 
-        public IEnumerable<User> GetByPage(Guid requestingUserPK, int currentPage, int pageSize, string? sortExpression, string? searchValue, Dictionary<string, bool>? searchByFields, bool includeInactive, bool strictMatch, out int totalRows)
-        {
+        public IEnumerable<User> GetByPage(
+            Guid requestingUserPK,
+            int currentPage,
+            int pageSize,
+            string? sortExpression,
+            string? searchValue,
+            Dictionary<string, bool>? searchByFields,
+            bool includeInactive,
+            bool strictMatch,
+            out int totalRows) {
             totalRows = 0;
             using var db = _factory.CreateDatabase();
+
             var parameters = new List<IDataParameter>
             {
                 db.CreateParameter("@RequestingUserPK", requestingUserPK),
@@ -115,43 +114,55 @@ namespace BusinessLogic
                 db.CreateParameter("@StrictMatch", strictMatch)
             };
 
-            using var reader = db.ExecuteReaderAsync("Users_SEL_ByPage", CommandType.StoredProcedure, parameters).GetAwaiter().GetResult();
+            AddSearchByFieldParameters(db, parameters, searchByFields);
+
+            using var reader = db.ExecuteReaderAsync("Users_SEL_ByPage", CommandType.StoredProcedure, parameters)
+                                  .GetAwaiter().GetResult();
+
             var list = new List<User>();
-            while (reader.Read())
-            {
-                var u = new User
-                {
-                    UserPK = reader.GetValue<Guid>("UserPK"),
-                    UserName = reader.GetValue<string>("UserName"),
-                    Email = reader.GetValue<string>("Email"),
-                    Password = reader.GetValue<string>("Password"),
-                    ActiveStatus = reader.GetValue<bool>("ActiveStatus"),
-                    RoleTypePK = reader.GetValue<Guid>("RoleTypePK"),
-                    RoleName = reader.GetValue<string>("RoleName"),
-                    FirstName = reader.GetValue<string>("FirstName"),
-                    SecondName = reader.GetValue<string?>("SecondName"),
-                    BirthDate = reader.GetValue<DateTime?>("BirthDate")
-                };
-                list.Add(u);
+            while (reader.Read()) {
+                list.Add(MapUser(reader));
             }
 
-            try
-            {
-                if (reader.NextResult())
-                {
-                    if (reader.Read())
-                    {
-                        totalRows = reader.GetValue<int>("TotalRows");
-                    }
+            try {
+                if (reader.NextResult() && reader.Read()) {
+                    totalRows = reader.GetValue<int>("TotalRows");
                 }
             }
-            catch
-            {
-                // ignore
+            catch {
+                // total rows not available from this result set; leave as 0
             }
 
             reader.Close();
             return list;
+        }
+
+        private static void AddSearchByFieldParameters(
+            Database db,
+            List<IDataParameter> parameters,
+            Dictionary<string, bool>? searchByFields) {
+            if (searchByFields == null) return;
+
+            foreach (var field in searchByFields) {
+                // expects keys like "UserName", "Email", "FirstName", "SecondName"
+                // mapped to SP parameters "@SearchByUserName", "@SearchByEmail", etc.
+                parameters.Add(db.CreateParameter($"@SearchBy{field.Key}", field.Value));
+            }
+        }
+
+        private static User MapUser(IDataReader reader) {
+            return new User {
+                UserPK = reader.GetValue<Guid>("UserPK"),
+                UserName = reader.GetValue<string>("UserName"),
+                Email = reader.GetValue<string>("Email"),
+                Password = reader.GetValue<string>("Password"),
+                ActiveStatus = reader.GetValue<bool>("ActiveStatus"),
+                RoleTypePK = reader.GetValue<Guid>("RoleTypePK"),
+                RoleName = reader.GetValue<string>("RoleName"),
+                FirstName = reader.GetValue<string>("FirstName"),
+                SecondName = reader.GetValue<string?>("SecondName"),
+                BirthDate = reader.GetValue<DateTime?>("BirthDate")
+            };
         }
     }
 }

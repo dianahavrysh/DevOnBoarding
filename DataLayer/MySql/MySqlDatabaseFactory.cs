@@ -1,5 +1,5 @@
 using Common.Interfaces;
-using Common;
+using Common.Database;
 
 namespace DataLayer.MySql
 {

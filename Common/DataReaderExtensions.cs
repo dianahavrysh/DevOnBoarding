@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 
 namespace Common
@@ -24,7 +24,7 @@ namespace Common
             if (val is T t)
                 return t;
 
-            // handle common conversions
+            
             try
             {
                 if (typeof(T) == typeof(Guid))
@@ -55,3 +55,4 @@ namespace Common
         }
     }
 }
+

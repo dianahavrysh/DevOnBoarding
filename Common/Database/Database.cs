@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 
-namespace Common
+namespace Common.Database
 {
     /// <summary>
     /// Abstract base class for provider-specific database implementations.
@@ -38,7 +38,7 @@ namespace Common
                 if (conn.State != ConnectionState.Open)
                     conn.Open();
 
-                // Note: CommandBehavior.CloseConnection so reader closes connection when disposed by caller
+                
                 var task = Task.Factory.StartNew(() => cmd.ExecuteReader(CommandBehavior.CloseConnection));
                 return await task.ConfigureAwait(false);
             }
@@ -88,7 +88,7 @@ namespace Common
         {
             if (!_disposed)
             {
-                // Nothing to dispose at base level; derived classes may hold resources.
+                
                 _disposed = true;
             }
         }
@@ -101,3 +101,4 @@ namespace Common
         #endregion
     }
 }
+

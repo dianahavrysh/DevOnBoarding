@@ -1,4 +1,4 @@
-using Common;
+using Common.Database;
 
 namespace Common.Interfaces
 {
@@ -7,6 +7,6 @@ namespace Common.Interfaces
     /// </summary>
     public interface IDatabaseFactory
     {
-        Database CreateDatabase();
+        Common.Database.Database CreateDatabase();
     }
 }
