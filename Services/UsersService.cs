@@ -1,6 +1,6 @@
+using Common.DTOs;
 using Common.Entities;
 using Common.Interfaces;
-using Common.Services.DTOs;
 using System;
 using System.Collections.Generic;
 
@@ -97,7 +97,6 @@ namespace Services
             existing.Password = dto.Password;
             existing.ActiveStatus = dto.ActiveStatus;
             existing.RoleTypePK = dto.RoleTypePK;
-            // RoleName is not provided in write DTO; keep existing or set empty
             existing.FirstName = dto.FirstName;
             existing.SecondName = dto.LastName;
             existing.BirthDate = dto.BirthDate;

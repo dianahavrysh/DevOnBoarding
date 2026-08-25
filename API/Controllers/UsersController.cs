@@ -1,5 +1,5 @@
+using Common.DTOs;
 using Common.Interfaces;
-using Common.Services.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using System;
 

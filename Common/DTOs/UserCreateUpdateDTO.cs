@@ -1,6 +1,6 @@
 using System;
 
-namespace Common.Services.DTOs
+namespace Common.DTOs
 {
     /// <summary>
     /// DTO used for creating or updating a user.

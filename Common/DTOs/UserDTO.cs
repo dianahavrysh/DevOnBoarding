@@ -1,6 +1,6 @@
 using System;
 
-namespace Common.Services.DTOs
+namespace Common.DTOs
 {
     /// <summary>
     /// DTO representing a user for client consumption.
