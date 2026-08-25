@@ -1,4 +1,10 @@
-CREATE PROCEDURE dbo.Users_INS
+USE [DevOnBoarding]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Users_INS]
 	@UserName NVARCHAR(50),
 	@Email NVARCHAR(50),
 	@Password NVARCHAR(50),
@@ -6,22 +12,27 @@ CREATE PROCEDURE dbo.Users_INS
 	@RoleTypePK UNIQUEIDENTIFIER,
 	@FirstName NVARCHAR(50),
 	@SecondName NVARCHAR(50) = NULL,
-	@BirthDate DATETIME2(7) = NULL,
-	@NewUserPK UNIQUEIDENTIFIER OUTPUT
+	@BirthDate DATETIME2(7) = NULL
 AS
 BEGIN
 	SET NOCOUNT ON;
 	BEGIN TRANSACTION;
 	BEGIN TRY
-		SET @NewUserPK = NEWSEQUENTIALID();
+		DECLARE @InsertedIds TABLE (UserPK UNIQUEIDENTIFIER);
+		DECLARE @NewUserPK UNIQUEIDENTIFIER;
 
-		INSERT INTO dbo.Users (UserPK, UserName, Email, Password, ActiveStatus, RoleTypePK)
-		VALUES (@NewUserPK, @UserName, @Email, @Password, @ActiveStatus, @RoleTypePK);
+		INSERT INTO dbo.Users (UserName, Email, Password, ActiveStatus, RoleTypePK)
+		OUTPUT INSERTED.UserPK INTO @InsertedIds
+		VALUES (@UserName, @Email, @Password, @ActiveStatus, @RoleTypePK);
+
+		SELECT @NewUserPK = UserPK FROM @InsertedIds;
 
 		INSERT INTO dbo.UserData (UserPK, FirstName, SecondName, BirthDate)
 		VALUES (@NewUserPK, @FirstName, @SecondName, @BirthDate);
 
 		COMMIT TRANSACTION;
+
+		SELECT @NewUserPK AS NewUserPK; 
 	END TRY
 	BEGIN CATCH
 		IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
