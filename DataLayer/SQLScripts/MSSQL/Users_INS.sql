@@ -11,24 +11,45 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 	BEGIN TRANSACTION;
-
 	BEGIN TRY
 		DECLARE @InsertedIds TABLE (UserPK UNIQUEIDENTIFIER);
 		DECLARE @NewUserPK UNIQUEIDENTIFIER;
 
 		INSERT INTO dbo.Users
-			(UserName, Email, Password, ActiveStatus, RoleTypePK)
+		(
+			UserName,
+			Email,
+			Password,
+			ActiveStatus,
+			RoleTypePK
+		)
 		OUTPUT INSERTED.UserPK INTO @InsertedIds
 		VALUES
-			(@UserName, @Email, @Password, @ActiveStatus, @RoleTypePK);
+		(
+			@UserName,
+			@Email,
+			@Password,
+			@ActiveStatus,
+			@RoleTypePK
+		);
 
 		SELECT @NewUserPK = UserPK
 		FROM @InsertedIds;
 
 		INSERT INTO dbo.UserData
-			(UserPK, FirstName, SecondName, BirthDate)
+		(
+			UserPK,
+			FirstName,
+			SecondName,
+			BirthDate
+		)
 		VALUES
-			(@NewUserPK, @FirstName, @SecondName, @BirthDate);
+		(
+			@NewUserPK,
+			@FirstName,
+			@SecondName,
+			@BirthDate
+		);
 
 		COMMIT TRANSACTION;
 
