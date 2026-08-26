@@ -2,6 +2,7 @@ using Common.DTOs;
 using Common.Entities;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Common.Interfaces
 {

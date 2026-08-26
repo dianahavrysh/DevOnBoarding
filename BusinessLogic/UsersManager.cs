@@ -1,6 +1,7 @@
 using Common.Entities;
 using Common.Interfaces;
 using Common.Database;
+using Common;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -11,7 +12,7 @@ namespace BusinessLogic {
     /// <summary>
     /// Business logic implementation for user operations. This class delegates to the data layer for persistence.
     /// </summary>
-    public class UsersManager : BaseDbManager, IUsersManager {
+    internal class UsersManager : BaseDbManager, IUsersManager {
 
         /// <summary>
         /// Initializes a new instance of <see cref="UsersManager"/>.

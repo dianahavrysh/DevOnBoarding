@@ -1,5 +1,6 @@
 using Common.Entities;
 using System.Data;
+using Common;
 
 namespace BusinessLogic.Mappers
 {
