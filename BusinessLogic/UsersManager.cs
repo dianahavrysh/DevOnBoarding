@@ -12,7 +12,7 @@ namespace BusinessLogic {
     /// <summary>
     /// Business logic implementation for user operations. This class delegates to the data layer for persistence.
     /// </summary>
-    internal class UsersManager : BaseDbManager, IUsersManager {
+    public class UsersManager : BaseDbManager, IUsersManager {
 
         /// <summary>
         /// Initializes a new instance of <see cref="UsersManager"/>.

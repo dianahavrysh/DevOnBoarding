@@ -5,7 +5,7 @@ using System.Data;
 
 namespace BusinessLogic
 {
-    internal abstract class BaseDbManager
+    public abstract class BaseDbManager
     {
         protected readonly Database Db;
 

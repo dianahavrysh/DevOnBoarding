@@ -53,9 +53,9 @@ namespace DataLayer.MySql
 
         public override async Task<int> ExecuteNonQueryAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null)
         {
-            await using var conn = (MySqlConnection)CreateConnection();
+            using var conn = (MySqlConnection)CreateConnection();
             await conn.OpenAsync().ConfigureAwait(false);
-            await using var cmd = (MySqlCommand)CreateCommand(commandText, conn, commandType);
+            using var cmd = (MySqlCommand)CreateCommand(commandText, conn, commandType);
             if (parameters != null)
             {
                 foreach (var p in parameters)
@@ -67,9 +67,9 @@ namespace DataLayer.MySql
 
         public override async Task<object?> ExecuteScalarAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null)
         {
-            await using var conn = (MySqlConnection)CreateConnection();
+            using var conn = (MySqlConnection)CreateConnection();
             await conn.OpenAsync().ConfigureAwait(false);
-            await using var cmd = (MySqlCommand)CreateCommand(commandText, conn, commandType);
+            using var cmd = (MySqlCommand)CreateCommand(commandText, conn, commandType);
             if (parameters != null)
             {
                 foreach (var p in parameters)
