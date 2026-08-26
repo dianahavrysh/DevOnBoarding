@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
@@ -7,16 +6,15 @@ namespace Common.Database
 {
     /// <summary>
     /// Abstract base class for provider-specific database implementations.
-    /// Provides common async helpers for executing commands and queries.
-    /// Concrete providers must implement connection and command creation.
+    /// Concrete providers must implement connection and parameter creation and the provider-specific async execution primitives.
     /// </summary>
-    public abstract class Database : IDisposable
+    public abstract class Database
     {
         protected readonly string _connectionString;
 
         protected Database(string connectionString)
         {
-            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+            _connectionString = connectionString;
         }
 
         /// <summary>
@@ -26,18 +24,21 @@ namespace Common.Database
         public abstract IDbConnection CreateConnection();
 
         /// <summary>
-        /// Create an <see cref="IDbCommand"/> for the specified connection.
+        /// Default implementation that creates a command for the specified connection.
+        /// Providers may override if they need custom command initialization.
         /// </summary>
-        /// <param name="commandText">The command text or stored procedure name.</param>
-        /// <param name="connection">The connection to associate with the command.</param>
-        /// <param name="commandType">The <see cref="CommandType"/> (Text or StoredProcedure).</param>
-        /// <returns>An initialized <see cref="IDbCommand"/> instance.</returns>
-        public abstract IDbCommand CreateCommand(string commandText, IDbConnection connection, CommandType commandType = CommandType.StoredProcedure);
+        public virtual IDbCommand CreateCommand(string commandText, IDbConnection connection, CommandType commandType = CommandType.StoredProcedure)
+        {
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = commandText;
+            cmd.CommandType = commandType;
+            return cmd;
+        }
 
         /// <summary>
         /// Create a provider-specific parameter for commands.
         /// </summary>
-        /// <param name="name">Parameter name including any provider prefix (e.g. "@Name").</param>
+        /// <param name="name">Parameter name (provider prefix is applied by implementations when needed).</param>
         /// <param name="value">Parameter value or <c>null</c> to represent <see cref="DBNull.Value"/>.</param>
         /// <param name="type">Optional <see cref="DbType"/> for the parameter.</param>
         /// <returns>An <see cref="IDataParameter"/> instance.</returns>
@@ -45,106 +46,19 @@ namespace Common.Database
 
         /// <summary>
         /// Execute a command that returns a data reader asynchronously.
-        /// The caller must dispose the returned <see cref="IDataReader"/>; the underlying connection will be closed when the reader is disposed.
+        /// The caller is responsible for disposing the returned <see cref="IDataReader"/>; the underlying connection will be closed when the reader is disposed.
         /// </summary>
-        /// <param name="commandText">Command text or stored procedure name.</param>
-        /// <param name="commandType">Command type (Text or StoredProcedure).</param>
-        /// <param name="parameters">Optional parameters to add to the command.</param>
-        /// <returns>An open <see cref="IDataReader"/> for reading results.</returns>
-        public virtual async Task<IDataReader> ExecuteReaderAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null)
-        {
-            var conn = CreateConnection();
-            var cmd = CreateCommand(commandText, conn, commandType);
-            if (parameters != null)
-            {
-                foreach (var p in parameters)
-                    cmd.Parameters.Add(p);
-            }
-
-            try
-            {
-                if (conn.State != ConnectionState.Open)
-                    conn.Open();
-
-                
-                var task = Task.Factory.StartNew(() => cmd.ExecuteReader(CommandBehavior.CloseConnection));
-                return await task.ConfigureAwait(false);
-            }
-            catch
-            {
-                conn.Dispose();
-                throw;
-            }
-        }
+        public abstract Task<IDataReader> ExecuteReaderAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null);
 
         /// <summary>
         /// Execute a command that does not return rows (INSERT/UPDATE/DELETE) asynchronously.
         /// </summary>
-        /// <param name="commandText">Command text or stored procedure name.</param>
-        /// <param name="commandType">Command type.</param>
-        /// <param name="parameters">Optional parameters.</param>
-        /// <returns>The number of affected rows.</returns>
-        public virtual async Task<int> ExecuteNonQueryAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null)
-        {
-            using var conn = CreateConnection();
-            using var cmd = CreateCommand(commandText, conn, commandType);
-            if (parameters != null)
-            {
-                foreach (var p in parameters)
-                    cmd.Parameters.Add(p);
-            }
-
-            if (conn.State != ConnectionState.Open)
-                conn.Open();
-
-            return await Task.Factory.StartNew(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
-        }
+        public abstract Task<int> ExecuteNonQueryAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null);
 
         /// <summary>
-        /// Execute a command and return the first column of the first row in the result set.
+        /// Execute a command and return the first column of the first row in the result set asynchronously.
         /// </summary>
-        /// <param name="commandText">Command text or stored procedure name.</param>
-        /// <param name="commandType">Command type.</param>
-        /// <param name="parameters">Optional parameters.</param>
-        /// <returns>The first column of the first row, or <c>null</c> if no result.</returns>
-        public virtual async Task<object?> ExecuteScalarAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null)
-        {
-            using var conn = CreateConnection();
-            using var cmd = CreateCommand(commandText, conn, commandType);
-            if (parameters != null)
-            {
-                foreach (var p in parameters)
-                    cmd.Parameters.Add(p);
-            }
-
-            if (conn.State != ConnectionState.Open)
-                conn.Open();
-
-            return await Task.Factory.StartNew(() => cmd.ExecuteScalar()).ConfigureAwait(false);
-        }
-
-        #region IDisposable
-        protected bool _disposed = false;
-
-        /// <summary>
-        /// Dispose pattern implementation.
-        /// </summary>
-        /// <param name="disposing">True when called from Dispose, false when called from a finalizer.</param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                
-                _disposed = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion
+        public abstract Task<object?> ExecuteScalarAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null);
     }
 }
 

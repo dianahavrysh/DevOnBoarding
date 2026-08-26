@@ -12,6 +12,9 @@ namespace API.Controllers
     /// </summary>
     public class UsersController : ControllerBase
     {
+        /// <summary>
+        /// Service providing user-related operations.
+        /// </summary>
         private readonly IUsersService _service;
 
         /// <summary>
@@ -29,9 +32,9 @@ namespace API.Controllers
         /// <param name="id">User primary key.</param>
         /// <returns>200 with user DTO or 404 if not found.</returns>
         [HttpGet("{id}")]
-        public IActionResult GetByPK(Guid id)
+        public async System.Threading.Tasks.Task<IActionResult> GetByPK(Guid id)
         {
-            var dto = _service.GetByPK(id);
+            var dto = await _service.GetByPKAsync(id).ConfigureAwait(false);
             if (dto == null) return NotFound();
             return Ok(dto);
         }
@@ -40,13 +43,12 @@ namespace API.Controllers
         /// Get a paginated list of users.
         /// </summary>
         [HttpGet]
-        public IActionResult GetByPage(
+        public async System.Threading.Tasks.Task<IActionResult> GetByPage(
         [FromQuery] Guid requestingUserPK,
         [FromQuery] int currentPage = 1,
         [FromQuery] int pageSize = 20) {
-            var totalRows = 0;
-            var results = _service.GetByPage(requestingUserPK, currentPage, pageSize, null, null, null, false, false, out totalRows);
-            return Ok(new { TotalRows = totalRows, Items = results });
+            var (items, total) = await _service.GetByPageAsync(requestingUserPK, currentPage, pageSize, null, null, null, false, false).ConfigureAwait(false);
+            return Ok(new { TotalRows = total, Items = items });
         }
 
         /// <summary>
@@ -55,9 +57,9 @@ namespace API.Controllers
         /// <param name="dto">Write DTO containing user data.</param>
         /// <returns>201 Created with Location header to the new resource.</returns>
         [HttpPost]
-        public IActionResult Create([FromBody] UserCreateUpdateDTO dto)
+        public async System.Threading.Tasks.Task<IActionResult> Create([FromBody] UserCreateUpdateDTO dto)
         {
-            var id = _service.Create(dto);
+            var id = await _service.CreateAsync(dto).ConfigureAwait(false);
             return CreatedAtAction(nameof(GetByPK), new { id }, null);
         }
 
@@ -67,23 +69,16 @@ namespace API.Controllers
         /// <param name="id">User primary key.</param>
         /// <param name="dto">Write DTO with updated values.</param>
         [HttpPut("{id}")]
-        public IActionResult Update(Guid id, [FromBody] UserCreateUpdateDTO dto)
+        public async System.Threading.Tasks.Task<IActionResult> Update(Guid id, [FromBody] UserCreateUpdateDTO dto)
         {
-            try
-            {
-                _service.Update(id, dto);
-                return NoContent();
-            }
-            catch (ArgumentException)
-            {
-                return NotFound();
-            }
+            var updated = await _service.UpdateAsync(id, dto).ConfigureAwait(false);
+            return updated ? NoContent() : NotFound();
         }
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(Guid id)
+        public async System.Threading.Tasks.Task<IActionResult> Delete(Guid id)
         {
-            _service.Delete(id);
+            await _service.DeleteAsync(id).ConfigureAwait(false);
             return NoContent();
         }
     }

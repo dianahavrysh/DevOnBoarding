@@ -10,14 +10,30 @@ namespace Common.Interfaces
     /// </summary>
     public interface IUsersService
     {
-        UserDTO? GetByPK(Guid userPK);
+        /// <summary>
+        /// Get a user DTO by primary key asynchronously.
+        /// </summary>
+        Task<UserDTO?> GetByPKAsync(Guid userPK);
 
-        IEnumerable<UserDTO> GetByPage(Guid requestingUserPK, int currentPage, int pageSize, string? sortExpression, string? searchValue, Dictionary<string, bool>? searchByFields, bool includeInactive, bool strictMatch, out int totalRows);
+        /// <summary>
+        /// Retrieve a paginated list of user DTOs asynchronously.
+        /// Returns items and total rows.
+        /// </summary>
+        Task<(IEnumerable<UserDTO> Items, int TotalRows)> GetByPageAsync(Guid requestingUserPK, int currentPage, int pageSize, string? sortExpression, string? searchValue, Dictionary<string, bool>? searchByFields, bool includeInactive, bool strictMatch);
 
-        Guid Create(UserCreateUpdateDTO dto);
+        /// <summary>
+        /// Create a new user from the supplied DTO asynchronously.
+        /// </summary>
+        Task<Guid> CreateAsync(UserCreateUpdateDTO dto);
 
-        void Update(Guid userPK, UserCreateUpdateDTO dto);
+        /// <summary>
+        /// Update an existing user asynchronously. Returns true if updated, false if not found.
+        /// </summary>
+        Task<bool> UpdateAsync(Guid userPK, UserCreateUpdateDTO dto);
 
-        void Delete(Guid userPK);
+        /// <summary>
+        /// Delete the user identified by the specified primary key asynchronously.
+        /// </summary>
+        Task DeleteAsync(Guid userPK);
     }
 }

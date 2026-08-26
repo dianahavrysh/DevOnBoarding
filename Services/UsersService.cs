@@ -3,6 +3,8 @@ using Common.Entities;
 using Common.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Services.Mappers;
 
 namespace Services
 {
@@ -28,33 +30,19 @@ namespace Services
         /// </summary>
         /// <param name="dto">Write DTO containing user fields to create.</param>
         /// <returns>The primary key of the created user.</returns>
-        public Guid Create(UserCreateUpdateDTO dto)
+        public async Task<Guid> CreateAsync(UserCreateUpdateDTO dto)
         {
-            
-            var user = new User
-            {
-                UserPK = Guid.NewGuid(),
-                UserName = dto.UserName,
-                Email = dto.Email,
-                Password = dto.Password,
-                ActiveStatus = dto.ActiveStatus,
-                RoleTypePK = dto.RoleTypePK,
-                RoleName = string.Empty,
-                FirstName = dto.FirstName,
-                SecondName = dto.LastName,
-                BirthDate = dto.BirthDate
-            };
-
-            return _manager.Insert(user);
+            var user = UserMapper.ToEntity(dto);
+            return await _manager.InsertAsync(user).ConfigureAwait(false);
         }
 
         /// <summary>
         /// Delete the user identified by the specified primary key.
         /// </summary>
         /// <param name="userPK">Primary key of the user to delete.</param>
-        public void Delete(Guid userPK)
+        public async Task DeleteAsync(Guid userPK)
         {
-            _manager.Delete(userPK);
+            await _manager.DeleteAsync(userPK).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -62,61 +50,40 @@ namespace Services
         /// </summary>
         /// <param name="userPK">User primary key.</param>
         /// <returns>A <see cref="UserDTO"/> if the user exists; otherwise <c>null</c>.</returns>
-        public UserDTO? GetByPK(Guid userPK)
+        public async Task<UserDTO?> GetByPKAsync(Guid userPK)
         {
-            var u = _manager.GetByPK(userPK);
+            var u = await _manager.GetByPKAsync(userPK).ConfigureAwait(false);
             if (u == null) return null;
-            return MapToDTO(u);
+            return UserMapper.ToDto(u);
         }
 
         /// <summary>
         /// Retrieve a paged list of user DTOs.
         /// </summary>
-        /// <inheritdoc cref="IUsersService.GetByPage(Guid,int,int,string?,string?,Dictionary{string,bool}?,bool,bool,out int)"/>
-        public IEnumerable<UserDTO> GetByPage(Guid requestingUserPK, int currentPage, int pageSize, string? sortExpression, string? searchValue, Dictionary<string, bool>? searchByFields, bool includeInactive, bool strictMatch, out int totalRows)
+        public async Task<(IEnumerable<UserDTO> Items, int TotalRows)> GetByPageAsync(Guid requestingUserPK, int currentPage, int pageSize, string? sortExpression, string? searchValue, Dictionary<string, bool>? searchByFields, bool includeInactive, bool strictMatch)
         {
-            var users = _manager.GetByPage(requestingUserPK, currentPage, pageSize, sortExpression, searchValue, searchByFields, includeInactive, strictMatch, out totalRows);
+            var (items, total) = await _manager.GetByPageAsync(requestingUserPK, currentPage, pageSize, sortExpression, searchValue, searchByFields, includeInactive, strictMatch).ConfigureAwait(false);
             var list = new List<UserDTO>();
-            foreach (var u in users)
-                list.Add(MapToDTO(u));
-            return list;
+            foreach (var u in items)
+                list.Add(UserMapper.ToDto(u));
+            return (list, total);
         }
 
         /// <summary>
         /// Update an existing user with values from the write DTO.
+        /// Returns true if updated, false if user not found.
         /// </summary>
         /// <param name="userPK">Primary key of the user to update.</param>
         /// <param name="dto">Write DTO with updated values.</param>
-        public void Update(Guid userPK, UserCreateUpdateDTO dto)
+        public async Task<bool> UpdateAsync(Guid userPK, UserCreateUpdateDTO dto)
         {
-            var existing = _manager.GetByPK(userPK);
-            if (existing == null) throw new ArgumentException("User not found", nameof(userPK));
+            var existing = await _manager.GetByPKAsync(userPK).ConfigureAwait(false);
+            if (existing == null) return false;
 
-            existing.UserName = dto.UserName;
-            existing.Email = dto.Email;
-            existing.Password = dto.Password;
-            existing.ActiveStatus = dto.ActiveStatus;
-            existing.RoleTypePK = dto.RoleTypePK;
-            existing.FirstName = dto.FirstName;
-            existing.SecondName = dto.LastName;
-            existing.BirthDate = dto.BirthDate;
+            UserMapper.ApplyUpdate(existing, dto);
 
-            _manager.Update(existing);
-        }
-
-        private UserDTO MapToDTO(User u)
-        {
-            return new UserDTO
-            {
-                UserPK = u.UserPK,
-                UserName = u.UserName,
-                Email = u.Email,
-                ActiveStatus = u.ActiveStatus,
-                RoleName = u.RoleName,
-                FirstName = u.FirstName,
-                LastName = u.SecondName,
-                BirthDate = u.BirthDate
-            };
+            await _manager.UpdateAsync(existing).ConfigureAwait(false);
+            return true;
         }
     }
 }

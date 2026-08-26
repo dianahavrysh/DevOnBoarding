@@ -1,22 +1,39 @@
 using Common.Entities;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Common.Interfaces
+
 {
     /// <summary>
     /// Manager interface for user operations.
     /// </summary>
     public interface IUsersManager
     {
-        User? GetByPK(Guid userPK);
+        /// <summary>
+        /// Get a user entity by primary key asynchronously.
+        /// </summary>
+        Task<User?> GetByPKAsync(Guid userPK);
 
-        IEnumerable<User> GetByPage(Guid requestingUserPK, int currentPage, int pageSize, string? sortExpression, string? searchValue, Dictionary<string, bool>? searchByFields, bool includeInactive, bool strictMatch, out int totalRows);
+        /// <summary>
+        /// Retrieve a paginated list of users asynchronously. Returns items and total rows.
+        /// </summary>
+        Task<(IEnumerable<User> Items, int TotalRows)> GetByPageAsync(Guid requestingUserPK, int currentPage, int pageSize, string? sortExpression, string? searchValue, Dictionary<string, bool>? searchByFields, bool includeInactive, bool strictMatch);
 
-        Guid Insert(User user);
+        /// <summary>
+        /// Insert a user asynchronously and return the created primary key.
+        /// </summary>
+        Task<Guid> InsertAsync(User user);
 
-        void Update(User user);
+        /// <summary>
+        /// Update a user asynchronously.
+        /// </summary>
+        Task UpdateAsync(User user);
 
-        void Delete(Guid userPK);
+        /// <summary>
+        /// Delete a user by primary key asynchronously.
+        /// </summary>
+        Task DeleteAsync(Guid userPK);
     }
 }

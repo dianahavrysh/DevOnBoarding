@@ -18,6 +18,10 @@ namespace Common.DTOs
         public bool ActiveStatus { get; set; }
         /// <summary>Role display name.</summary>
         public string RoleName { get; set; } = string.Empty;
+        /// <summary>
+        /// Role type primary key, exposed so clients can pre-select the correct role when editing a user.
+        /// </summary>
+        public Guid RoleTypePK { get; set; }
         /// <summary>User first name.</summary>
         public string FirstName { get; set; } = string.Empty;
         /// <summary>User last name (optional).</summary>
