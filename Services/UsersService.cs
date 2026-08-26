@@ -4,6 +4,7 @@ using Common.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Services.Mappers;
 
 namespace Services
@@ -15,14 +16,17 @@ namespace Services
     public class UsersService : IUsersService
     {
         private readonly IUsersManager _manager;
+        private readonly ILogger<UsersService> _logger;
 
         /// <summary>
         /// Initializes a new instance of <see cref="UsersService"/>.
         /// </summary>
         /// <param name="manager">Business logic manager used for persistence and retrieval.</param>
-        public UsersService(IUsersManager manager)
+        /// <param name="logger">Logger instance for this service.</param>
+        public UsersService(IUsersManager manager, ILogger<UsersService> logger)
         {
             _manager = manager;
+            _logger = logger;
         }
 
         /// <summary>
@@ -33,7 +37,15 @@ namespace Services
         public async Task<Guid> CreateAsync(UserCreateUpdateDTO dto)
         {
             var user = UserMapper.ToEntity(dto);
-            return await _manager.InsertAsync(user).ConfigureAwait(false);
+            try
+            {
+                return await _manager.InsertAsync(user).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating user");
+                throw;
+            }
         }
 
         /// <summary>
@@ -42,7 +54,15 @@ namespace Services
         /// <param name="userPK">Primary key of the user to delete.</param>
         public async Task DeleteAsync(Guid userPK)
         {
-            await _manager.DeleteAsync(userPK).ConfigureAwait(false);
+            try
+            {
+                await _manager.DeleteAsync(userPK).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting user {UserPK}", userPK);
+                throw;
+            }
         }
 
         /// <summary>
@@ -52,9 +72,17 @@ namespace Services
         /// <returns>A <see cref="UserDTO"/> if the user exists; otherwise <c>null</c>.</returns>
         public async Task<UserDTO?> GetByPKAsync(Guid userPK)
         {
-            var u = await _manager.GetByPKAsync(userPK).ConfigureAwait(false);
-            if (u == null) return null;
-            return UserMapper.ToDto(u);
+            try
+            {
+                var u = await _manager.GetByPKAsync(userPK).ConfigureAwait(false);
+                if (u == null) return null;
+                return UserMapper.ToDto(u);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user by PK {UserPK}", userPK);
+                throw;
+            }
         }
 
         /// <summary>
@@ -62,11 +90,19 @@ namespace Services
         /// </summary>
         public async Task<(IEnumerable<UserDTO> Items, int TotalRows)> GetByPageAsync(Guid requestingUserPK, int currentPage, int pageSize, string? sortExpression, string? searchValue, Dictionary<string, bool>? searchByFields, bool includeInactive, bool strictMatch)
         {
-            var (items, total) = await _manager.GetByPageAsync(requestingUserPK, currentPage, pageSize, sortExpression, searchValue, searchByFields, includeInactive, strictMatch).ConfigureAwait(false);
-            var list = new List<UserDTO>();
-            foreach (var u in items)
-                list.Add(UserMapper.ToDto(u));
-            return (list, total);
+            try
+            {
+                var (items, total) = await _manager.GetByPageAsync(requestingUserPK, currentPage, pageSize, sortExpression, searchValue, searchByFields, includeInactive, strictMatch).ConfigureAwait(false);
+                var list = new List<UserDTO>();
+                foreach (var u in items)
+                    list.Add(UserMapper.ToDto(u));
+                return (list, total);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting users page (RequestingUserPK={RequestingUserPK}, Page={CurrentPage}, PageSize={PageSize})", requestingUserPK, currentPage, pageSize);
+                throw;
+            }
         }
 
         /// <summary>
@@ -82,8 +118,16 @@ namespace Services
 
             UserMapper.ApplyUpdate(existing, dto);
 
-            await _manager.UpdateAsync(existing).ConfigureAwait(false);
-            return true;
+            try
+            {
+                await _manager.UpdateAsync(existing).ConfigureAwait(false);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating user {UserPK}", userPK);
+                throw;
+            }
         }
     }
 }
