@@ -6,8 +6,15 @@ using System;
 
 namespace DataLayer.MySql
 {
+    /// <summary>
+    /// MySQL implementation of the data access <see cref="Database"/> abstraction.
+    /// </summary>
     public class MySqlDatabase : Database
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MySqlDatabase"/> class.
+        /// </summary>
+        /// <param name="connectionString">Connection string for the MySQL server.</param>
         public MySqlDatabase(string connectionString) : base(connectionString)
         {
         }
@@ -26,6 +33,7 @@ namespace DataLayer.MySql
             return p;
         }
 
+        /// <inheritdoc />
         public override async Task<IDataReader> ExecuteReaderAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null)
         {
             var conn = (MySqlConnection)CreateConnection();
@@ -51,6 +59,7 @@ namespace DataLayer.MySql
             }
         }
 
+        /// <inheritdoc />
         public override async Task<int> ExecuteNonQueryAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null)
         {
             using var conn = (MySqlConnection)CreateConnection();
@@ -65,6 +74,7 @@ namespace DataLayer.MySql
             return await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
+        /// <inheritdoc />
         public override async Task<object?> ExecuteScalarAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null)
         {
             using var conn = (MySqlConnection)CreateConnection();

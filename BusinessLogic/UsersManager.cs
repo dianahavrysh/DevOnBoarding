@@ -15,17 +15,13 @@ namespace BusinessLogic {
     public class UsersManager : BaseDbManager, IUsersManager {
 
         /// <summary>
-        /// Initializes a new instance of <see cref="UsersManager"/>.
+        /// Initializes a new instance of the <see cref="UsersManager"/> class.
         /// </summary>
         /// <param name="factory">Database factory used to create provider-specific database instances.</param>
         public UsersManager(IDatabaseFactory factory) : base(factory) {
         }
 
-        /// <summary>
-        /// Insert a new user record.
-        /// </summary>
-        /// <param name="user">The user entity to insert.</param>
-        /// <returns>The <see cref="Guid"/> primary key of the newly created user, or <see cref="Guid.Empty"/> on failure.</returns>
+        /// <inheritdoc />
         public async Task<Guid> InsertAsync(User user) {
             var parameters = new List<IDataParameter>
             {
@@ -45,10 +41,7 @@ namespace BusinessLogic {
             return Guid.TryParse(obj.ToString(), out var g) ? g : Guid.Empty;
         }
 
-        /// <summary>
-        /// Update an existing user record.
-        /// </summary>
-        /// <param name="user">User entity with updated values.</param>
+        /// <inheritdoc />
         public async Task UpdateAsync(User user) {
             var parameters = new List<IDataParameter>
             {
@@ -66,10 +59,7 @@ namespace BusinessLogic {
             await Db.ExecuteNonQueryAsync(StoreProcedureNames.UsersUpdate, CommandType.StoredProcedure, parameters).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Delete a user by primary key.
-        /// </summary>
-        /// <param name="userPK">User primary key to delete.</param>
+        /// <inheritdoc />
         public async Task DeleteAsync(Guid userPK) {
             var parameters = new List<IDataParameter>
             {
@@ -79,11 +69,7 @@ namespace BusinessLogic {
             await Db.ExecuteNonQueryAsync(StoreProcedureNames.UsersDelete, CommandType.StoredProcedure, parameters).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Get a user entity by primary key.
-        /// </summary>
-        /// <param name="userPK">User primary key.</param>
-        /// <returns>The <see cref="User"/> if found; otherwise <c>null</c>.</returns>
+        /// <inheritdoc />
         public async Task<User?> GetByPKAsync(Guid userPK) {
             var parameters = new List<IDataParameter>
             {
@@ -101,9 +87,7 @@ namespace BusinessLogic {
             return null;
         }
 
-        /// <summary>
-        /// Retrieve a paginated list of users.
-        /// </summary>
+        /// <inheritdoc />
         public async Task<(IEnumerable<User> Items, int TotalRows)> GetByPageAsync(
             Guid requestingUserPK,
             int currentPage,
@@ -141,7 +125,7 @@ namespace BusinessLogic {
                 }
             }
             catch {
-                // ignore
+                // ignored
             }
 
             return (list, totalRows);
