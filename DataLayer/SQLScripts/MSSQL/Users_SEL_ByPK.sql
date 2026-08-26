@@ -10,6 +10,7 @@ BEGIN
 		u.Email,
 		u.Password,
 		u.ActiveStatus,
+		u.RoleTypePK,
 		r.RoleName,
 		ud.FirstName,
 		ud.SecondName AS LastName,
