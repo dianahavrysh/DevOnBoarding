@@ -6,8 +6,8 @@ CREATE PROCEDURE dbo.Users_UPD
 	@ActiveStatus BIT,
 	@RoleTypePK UNIQUEIDENTIFIER,
 	@FirstName NVARCHAR(50),
-	@SecondName NVARCHAR(50) = NULL,
-	@BirthDate DATETIME2(7) = NULL
+	@SecondName NVARCHAR(50),
+	@BirthDate DATETIME2(7)
 AS
 BEGIN
 	SET NOCOUNT ON;
