@@ -1,29 +1,27 @@
 CREATE PROCEDURE dbo.Users_SEL_ByPage
-	@RequestingUserPK UNIQUEIDENTIFIER,    
-	@CurrentPage INT = 1,
-	@PageSize INT = 20,
-	@SortExpression NVARCHAR(100) = NULL,   
-	@SearchValue NVARCHAR(50) = NULL,
-	@SearchByUserName BIT = 0,
-	@SearchByEmail BIT = 0,
-	@SearchByFirstName BIT = 0,
-	@SearchBySecondName BIT = 0,
-	@IncludeInactive BIT = 0,
-	@StrictMatch BIT = 0
+	@RequestingUserPK UNIQUEIDENTIFIER,
+	@CurrentPage INT,
+	@PageSize INT,
+	@SortExpression NVARCHAR(100),
+	@SearchValue NVARCHAR(50),
+	@SearchByUserName BIT,
+	@SearchByEmail BIT,
+	@SearchByFirstName BIT,
+	@SearchBySecondName BIT,
+	@IncludeInactive BIT,
+	@StrictMatch BIT
 AS
 BEGIN
 	SET NOCOUNT ON;
 
 	IF @CurrentPage IS NULL OR @CurrentPage < 1 SET @CurrentPage = 1;
 	IF @PageSize IS NULL OR @PageSize < 1 SET @PageSize = 20;
-
 	DECLARE @Offset INT = (@CurrentPage - 1) * @PageSize;
 
 	DECLARE @RequestingRoleName VARCHAR(50);
-
 	SELECT @RequestingRoleName = r.RoleName
-	FROM dbo.Users u
-	JOIN dbo.RoleTypes r ON r.RoleTypePK = u.RoleTypePK
+	FROM dbo.Users u WITH (NOLOCK)
+	JOIN dbo.RoleTypes r WITH (NOLOCK) ON r.RoleTypePK = u.RoleTypePK
 	WHERE u.UserPK = @RequestingUserPK;
 
 	IF @RequestingRoleName IS NULL
@@ -110,14 +108,14 @@ BEGIN
 		u.Email,
 		u.Password,
 		u.ActiveStatus,
-		r.RoleName AS RoleName,
+		r.RoleName,
 		ud.FirstName,
 		ud.SecondName AS LastName,
 		ud.BirthDate,
 		COUNT(*) OVER() AS TotalRows
-	FROM dbo.Users u
-	LEFT JOIN dbo.RoleTypes r ON u.RoleTypePK = r.RoleTypePK
-	LEFT JOIN dbo.UserData ud ON u.UserPK = ud.UserPK'
+	FROM dbo.Users u WITH (NOLOCK)
+	LEFT JOIN dbo.RoleTypes r WITH (NOLOCK) ON u.RoleTypePK = r.RoleTypePK
+	LEFT JOIN dbo.UserData ud WITH (NOLOCK) ON u.UserPK = ud.UserPK'
 	+ @Where +
 	N' ORDER BY ' + @SortColumn + N' ' + @SortDirection +
 	N' OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;';
