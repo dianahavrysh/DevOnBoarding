@@ -22,20 +22,12 @@ BEGIN
 			RoleTypePK = @RoleTypePK
 		WHERE UserPK = @UserPK;
 
-		IF EXISTS (SELECT 1 FROM dbo.UserData WHERE UserPK = @UserPK)
-		BEGIN
-			UPDATE dbo.UserData
-			SET
-				FirstName = @FirstName,
-				SecondName = @SecondName,
-				BirthDate = @BirthDate
-			WHERE UserPK = @UserPK;
-		END
-		ELSE
-		BEGIN
-			INSERT INTO dbo.UserData (UserPK, FirstName, SecondName, BirthDate)
-			VALUES (@UserPK, @FirstName, @SecondName, @BirthDate);
-		END
+		UPDATE dbo.UserData
+		SET
+			FirstName = @FirstName,
+			SecondName = @SecondName,
+			BirthDate = @BirthDate
+		WHERE UserPK = @UserPK;
 
 		COMMIT TRANSACTION;
 	END TRY
