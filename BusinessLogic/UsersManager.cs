@@ -18,73 +18,69 @@ namespace BusinessLogic {
         /// Initializes a new instance of the <see cref="UsersManager"/> class.
         /// </summary>
         /// <param name="factory">Database factory used to create provider-specific database instances.</param>
-        public UsersManager(IDatabaseFactory factory) : base(factory) {
+        /// <param name="connectionContext">Connection context for this manager lifetime (scoped per request/user).</param>
+        public UsersManager(IDatabaseFactory factory, ConnectionContext connectionContext) : base(factory, connectionContext) {
         }
 
         /// <inheritdoc />
         public async Task<Guid> InsertAsync(User user) {
             var parameters = new List<IDataParameter>
             {
-                Param("UserName", user.UserName),
-                Param("Email", user.Email),
-                Param("Password", user.Password),
-                Param("ActiveStatus", user.ActiveStatus),
-                Param("RoleTypePK", user.RoleTypePK),
-                Param("FirstName", user.FirstName),
-                Param("SecondName", user.SecondName ?? (object)DBNull.Value),
-                Param("BirthDate", user.BirthDate ?? (object)DBNull.Value)
+                Param(nameof(User.UserName), user.UserName),
+                Param(nameof(User.Email), user.Email),
+                Param(nameof(User.Password), user.Password),
+                Param(nameof(User.ActiveStatus), user.ActiveStatus),
+                Param(nameof(User.RoleTypePK), user.RoleTypePK),
+                Param(nameof(User.FirstName), user.FirstName),
+                Param(nameof(User.SecondName), user.SecondName ?? (object)DBNull.Value),
+                Param(nameof(User.BirthDate), user.BirthDate ?? (object)DBNull.Value)
             };
 
-            var obj = await Db.ExecuteScalarAsync(StoreProcedureNames.UsersInsert, CommandType.StoredProcedure, parameters).ConfigureAwait(false);
-
-            if (obj == null || obj == DBNull.Value) return Guid.Empty;
-            return Guid.TryParse(obj.ToString(), out var g) ? g : Guid.Empty;
+            var g = await Db.ExecuteScalarGuidAsync(StoreProcedureNames.UsersInsert, parameters: parameters);
+            return g;
         }
 
         /// <inheritdoc />
         public async Task UpdateAsync(User user) {
             var parameters = new List<IDataParameter>
             {
-                Param("UserPK", user.UserPK),
-                Param("UserName", user.UserName),
-                Param("Email", user.Email),
-                Param("Password", user.Password),
-                Param("ActiveStatus", user.ActiveStatus),
-                Param("RoleTypePK", user.RoleTypePK),
-                Param("FirstName", user.FirstName),
-                Param("SecondName", user.SecondName ?? (object)DBNull.Value),
-                Param("BirthDate", user.BirthDate ?? (object)DBNull.Value)
+                Param(nameof(User.UserPK), user.UserPK),
+                Param(nameof(User.UserName), user.UserName),
+                Param(nameof(User.Email), user.Email),
+                Param(nameof(User.Password), user.Password),
+                Param(nameof(User.ActiveStatus), user.ActiveStatus),
+                Param(nameof(User.RoleTypePK), user.RoleTypePK),
+                Param(nameof(User.FirstName), user.FirstName),
+                Param(nameof(User.SecondName), user.SecondName ?? (object)DBNull.Value),
+                Param(nameof(User.BirthDate), user.BirthDate ?? (object)DBNull.Value)
             };
 
-            await Db.ExecuteNonQueryAsync(StoreProcedureNames.UsersUpdate, CommandType.StoredProcedure, parameters).ConfigureAwait(false);
+            await Db.ExecuteNonQueryAsync(StoreProcedureNames.UsersUpdate, parameters: parameters);
         }
 
         /// <inheritdoc />
         public async Task DeleteAsync(Guid userPK) {
             var parameters = new List<IDataParameter>
             {
-                Param("UserPK", userPK)
+                Param(nameof(User.UserPK), userPK)
             };
 
-            await Db.ExecuteNonQueryAsync(StoreProcedureNames.UsersDelete, CommandType.StoredProcedure, parameters).ConfigureAwait(false);
+            await Db.ExecuteNonQueryAsync(StoreProcedureNames.UsersDelete, parameters: parameters);
         }
 
         /// <inheritdoc />
         public async Task<User?> GetByPKAsync(Guid userPK) {
-            var parameters = new List<IDataParameter>
-            {
-                Param("UserPK", userPK)
-            };
+            User? user = null;
+            var parameters = new List<IDataParameter> { Param(nameof(User.UserPK), userPK) };
 
-            using var reader = await Db.ExecuteReaderAsync(StoreProcedureNames.UsersSelectByPK, CommandType.StoredProcedure, parameters).ConfigureAwait(false);
+            using var reader = await Db.ExecuteReaderAsync(StoreProcedureNames.UsersSelectByPK, parameters: parameters);
             var dbReader = (System.Data.Common.DbDataReader)reader;
 
-            if (await dbReader.ReadAsync().ConfigureAwait(false)) {
-                var user = UserReaderMapper.Map(reader);
-                return user;
+            if (await dbReader.ReadAsync()) {
+                user = UserReaderMapper.Map(reader);
             }
 
-            return null;
+            return user;
         }
 
         /// <inheritdoc />
@@ -110,17 +106,17 @@ namespace BusinessLogic {
 
             AddSearchByFieldParameters(parameters, searchByFields);
 
-            using var reader = await Db.ExecuteReaderAsync(StoreProcedureNames.UsersSelectByPage, CommandType.StoredProcedure, parameters).ConfigureAwait(false);
+            using var reader = await Db.ExecuteReaderAsync(StoreProcedureNames.UsersSelectByPage, parameters: parameters);
             var dbReader = (System.Data.Common.DbDataReader)reader;
 
             var list = new List<User>();
-            while (await dbReader.ReadAsync().ConfigureAwait(false)) {
+            while (await dbReader.ReadAsync()) {
                 list.Add(UserReaderMapper.Map(reader));
             }
 
             var totalRows = 0;
             try {
-                if (await dbReader.NextResultAsync().ConfigureAwait(false) && await dbReader.ReadAsync().ConfigureAwait(false)) {
+                if (await dbReader.NextResultAsync() && await dbReader.ReadAsync()) {
                     totalRows = dbReader.GetValue<int>("TotalRows");
                 }
             }

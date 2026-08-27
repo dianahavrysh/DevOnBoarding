@@ -1,5 +1,6 @@
 using Common.Database;
 using Common.Interfaces;
+using Common;
 using System;
 using System.Data;
 
@@ -20,9 +21,10 @@ namespace BusinessLogic
         /// Initializes a new instance of the <see cref="BaseDbManager"/> class.
         /// </summary>
         /// <param name="factory">Factory used to create the database instance.</param>
-        protected BaseDbManager(IDatabaseFactory factory)
+        /// <param name="connectionContext">Per-request connection context (DB type + connection string).</param>
+        protected BaseDbManager(IDatabaseFactory factory, ConnectionContext connectionContext)
         {
-            Db = factory.CreateDatabase();
+            Db = factory.CreateDatabase(connectionContext);
         }
 
         /// <summary>

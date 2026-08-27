@@ -5,7 +5,14 @@ namespace Common.Enums
     /// </summary>
     public enum DbType
     {
+        /// <summary>
+        /// Microsoft SQL Server provider.
+        /// </summary>
         MSSQL,
+
+        /// <summary>
+        /// MySQL provider.
+        /// </summary>
         MySQL
     }
 }

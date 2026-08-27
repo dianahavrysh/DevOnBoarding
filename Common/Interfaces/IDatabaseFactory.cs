@@ -1,4 +1,5 @@
 using Common.Database;
+using Common;
 
 namespace Common.Interfaces
 {
@@ -9,9 +10,10 @@ namespace Common.Interfaces
     public interface IDatabaseFactory
     {
         /// <summary>
-        /// Create a new database instance. The caller is responsible for disposing the returned instance when finished.
+        /// Create a new database instance for the given connection context. The caller is responsible for disposing the returned instance when finished.
         /// </summary>
+        /// <param name="context">Connection context (DB type + connection string).</param>
         /// <returns>A new <see cref="Common.Database.Database"/> instance.</returns>
-        Common.Database.Database CreateDatabase();
+        Common.Database.Database CreateDatabase(ConnectionContext context);
     }
 }

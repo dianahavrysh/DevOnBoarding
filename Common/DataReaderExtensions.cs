@@ -3,6 +3,9 @@ using System.Data;
 
 namespace Common
 {
+    /// <summary>
+    /// Extension helpers for reading typed values from <see cref="IDataReader"/> instances.
+    /// </summary>
     public static class DataReaderExtensions
     {
         /// <summary>

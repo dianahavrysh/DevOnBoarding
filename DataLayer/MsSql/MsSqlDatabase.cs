@@ -1,30 +1,27 @@
 using Common.Database;
-using System.Data;
-using Microsoft.Data.SqlClient;
-using System.Threading.Tasks;
 using System;
+using System.Data;
 using System.Data.Common;
+using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
 
-namespace DataLayer.MsSql
-{
+namespace DataLayer.MsSql {
     /// <summary>
     /// SQL Server implementation of <see cref="Common.Database.Database"/>.
+    /// Only supplies provider-specific primitives; the shared execution
+    /// algorithm lives in the base class.
     /// </summary>
-    public class MsSqlDatabase : Database
-    {
-        public MsSqlDatabase(string connectionString) : base(connectionString)
-        {
+    public class MsSqlDatabase : Database {
+        public MsSqlDatabase(string connectionString) : base(connectionString) {
         }
 
         /// <inheritdoc/>
-        public override IDbConnection CreateConnection()
-        {
+        public override IDbConnection CreateConnection() {
             return new SqlConnection(_connectionString);
         }
 
         /// <inheritdoc/>
-        public override IDataParameter CreateParameter(string name, object? value, System.Data.DbType? type = null)
-        {
+        public override IDataParameter CreateParameter(string name, object? value, System.Data.DbType? type = null) {
             var paramName = name.StartsWith("@") ? name : "@" + name;
             var p = new SqlParameter(paramName, value ?? DBNull.Value);
             if (type.HasValue)
@@ -33,59 +30,23 @@ namespace DataLayer.MsSql
         }
 
         /// <inheritdoc/>
-        public override async Task<IDataReader> ExecuteReaderAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null)
-        {
-            var conn = (SqlConnection)CreateConnection();
-            var cmd = (SqlCommand)CreateCommand(commandText, conn, commandType);
-            if (parameters != null)
-            {
-                foreach (var p in parameters)
-                    cmd.Parameters.Add(p);
-            }
-
-            try
-            {
-                if (conn.State != ConnectionState.Open)
-                    await conn.OpenAsync().ConfigureAwait(false);
-
-                var reader = await cmd.ExecuteReaderAsync(CommandBehavior.CloseConnection).ConfigureAwait(false);
-                return reader;
-            }
-            catch
-            {
-                conn.Dispose();
-                throw;
-            }
+        protected override async Task OpenAsync(IDbConnection connection) {
+            await ((SqlConnection)connection).OpenAsync().ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public override async Task<int> ExecuteNonQueryAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null)
-        {
-            await using var conn = (SqlConnection)CreateConnection();
-            await conn.OpenAsync().ConfigureAwait(false);
-            await using var cmd = (SqlCommand)CreateCommand(commandText, conn, commandType);
-            if (parameters != null)
-            {
-                foreach (var p in parameters)
-                    cmd.Parameters.Add(p);
-            }
-
-            return await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+        protected override async Task<IDataReader> ExecuteReaderCoreAsync(IDbCommand command) {
+            return await ((SqlCommand)command).ExecuteReaderAsync(CommandBehavior.CloseConnection).ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public override async Task<object?> ExecuteScalarAsync(string commandText, CommandType commandType = CommandType.StoredProcedure, IEnumerable<IDataParameter>? parameters = null)
-        {
-            await using var conn = (SqlConnection)CreateConnection();
-            await conn.OpenAsync().ConfigureAwait(false);
-            await using var cmd = (SqlCommand)CreateCommand(commandText, conn, commandType);
-            if (parameters != null)
-            {
-                foreach (var p in parameters)
-                    cmd.Parameters.Add(p);
-            }
+        protected override async Task<int> ExecuteNonQueryCoreAsync(IDbCommand command) {
+            return await ((SqlCommand)command).ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
 
-            return await cmd.ExecuteScalarAsync().ConfigureAwait(false);
+        /// <inheritdoc/>
+        protected override async Task<object?> ExecuteScalarCoreAsync(IDbCommand command) {
+            return await ((SqlCommand)command).ExecuteScalarAsync().ConfigureAwait(false);
         }
     }
 }

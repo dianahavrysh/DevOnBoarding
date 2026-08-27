@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Services.Mappers;
+using AutoMapper;
 
 namespace Services
 {
@@ -17,16 +17,17 @@ namespace Services
     {
         private readonly IUsersManager _manager;
         private readonly ILogger<UsersService> _logger;
-
+        private readonly IMapper _mapper;
         /// <summary>
         /// Initializes a new instance of <see cref="UsersService"/>.
         /// </summary>
         /// <param name="manager">Business logic manager used for persistence and retrieval.</param>
         /// <param name="logger">Logger instance for this service.</param>
-        public UsersService(IUsersManager manager, ILogger<UsersService> logger)
+        public UsersService(IUsersManager manager, ILogger<UsersService> logger, IMapper mapper)
         {
             _manager = manager;
             _logger = logger;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -36,10 +37,10 @@ namespace Services
         /// <returns>The primary key of the created user.</returns>
         public async Task<Guid> CreateAsync(UserCreateUpdateDTO dto)
         {
-            var user = UserMapper.ToEntity(dto);
+            var user = _mapper.Map<User>(dto);
             try
             {
-                return await _manager.InsertAsync(user).ConfigureAwait(false);
+                return await _manager.InsertAsync(user);
             }
             catch (Exception ex)
             {
@@ -56,7 +57,7 @@ namespace Services
         {
             try
             {
-                await _manager.DeleteAsync(userPK).ConfigureAwait(false);
+                await _manager.DeleteAsync(userPK);
             }
             catch (Exception ex)
             {
@@ -74,9 +75,9 @@ namespace Services
         {
             try
             {
-                var u = await _manager.GetByPKAsync(userPK).ConfigureAwait(false);
+                var u = await _manager.GetByPKAsync(userPK);
                 if (u == null) return null;
-                return UserMapper.ToDto(u);
+                return _mapper.Map<UserDTO>(u);
             }
             catch (Exception ex)
             {
@@ -92,10 +93,10 @@ namespace Services
         {
             try
             {
-                var (items, total) = await _manager.GetByPageAsync(requestingUserPK, currentPage, pageSize, sortExpression, searchValue, searchByFields, includeInactive, strictMatch).ConfigureAwait(false);
+                var (items, total) = await _manager.GetByPageAsync(requestingUserPK, currentPage, pageSize, sortExpression, searchValue, searchByFields, includeInactive, strictMatch);
                 var list = new List<UserDTO>();
                 foreach (var u in items)
-                    list.Add(UserMapper.ToDto(u));
+                    list.Add(_mapper.Map<UserDTO>(u));
                 return (list, total);
             }
             catch (Exception ex)
@@ -113,14 +114,14 @@ namespace Services
         /// <param name="dto">Write DTO with updated values.</param>
         public async Task<bool> UpdateAsync(Guid userPK, UserCreateUpdateDTO dto)
         {
-            var existing = await _manager.GetByPKAsync(userPK).ConfigureAwait(false);
+            var existing = await _manager.GetByPKAsync(userPK);
             if (existing == null) return false;
 
-            UserMapper.ApplyUpdate(existing, dto);
+            _mapper.Map(dto, existing);
 
             try
             {
-                await _manager.UpdateAsync(existing).ConfigureAwait(false);
+                await _manager.UpdateAsync(existing);
                 return true;
             }
             catch (Exception ex)
