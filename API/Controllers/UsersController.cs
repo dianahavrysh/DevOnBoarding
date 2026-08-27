@@ -1,7 +1,7 @@
 using Common.DTOs;
 using Common.Interfaces;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 
@@ -12,9 +12,6 @@ namespace API.Controllers {
     [ApiController]
     [Route("api/[controller]")]
     public class UsersController : ControllerBase {
-        /// <summary>
-        /// Service providing user-related operations.
-        /// </summary>
         private readonly IUsersService _service;
 
         /// <summary>
@@ -35,7 +32,11 @@ namespace API.Controllers {
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetByPK(Guid id) {
             var dto = await _service.GetByPKAsync(id);
-            if (dto == null) return NotFound();
+
+            if (dto == null) {
+                return NotFound();
+            }
+
             return Ok(dto);
         }
 
@@ -50,44 +51,69 @@ namespace API.Controllers {
             [FromQuery] Guid requestingUserPK,
             [FromQuery] int currentPage = 1,
             [FromQuery] int pageSize = 20) {
-            var (items, total) = await _service.GetByPageAsync(requestingUserPK, currentPage, pageSize, null, null, null, false, false);
-            return Ok(new { TotalRows = total, Items = items });
+
+            var (items, total) = await _service.GetByPageAsync(
+                requestingUserPK,
+                currentPage,
+                pageSize,
+                null,
+                null,
+                null,
+                false,
+                false);
+
+            return Ok(new {
+                TotalRows = total,
+                Items = items
+            });
         }
 
         /// <summary>
         /// Create a new user.
         /// </summary>
         /// <param name="dto">Write DTO containing user data.</param>
-        /// <returns>201 Created with Location header to the new resource.</returns>
+        /// <returns>201 Created with the created user.</returns>
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(UserDTO), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] UserCreateUpdateDTO dto) {
-            var id = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetByPK), new { id }, new { id });
+            var created = await _service.CreateAsync(dto);
+
+            return CreatedAtAction(
+                nameof(GetByPK),
+                new { id = created.UserPK },
+                created);
         }
 
         /// <summary>
         /// Update an existing user.
         /// </summary>
-        /// <param name="id">User primary key.</param>
-        /// <param name="dto">Write DTO with updated values.</param>
-        [HttpPut("{id}")]
+        /// <param name="dto">
+        /// DTO containing the primary key of the user to update and the new values.
+        /// </param>
+        /// <returns>204 if updated or 404 if the user does not exist.</returns>
+        [HttpPut]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UserCreateUpdateDTO dto) {
-            var updated = await _service.UpdateAsync(id, dto);
-            return updated ? NoContent() : NotFound();
+        public async Task<IActionResult> Update([FromBody] UserCreateUpdateDTO dto) {
+            var updated = await _service.UpdateAsync(dto);
+
+            if (!updated) {
+                return NotFound();
+            }
+
+            return NoContent();
         }
 
         /// <summary>
-        /// Delete a user by primary key.
+        /// Delete the user identified by the specified primary key.
         /// </summary>
         /// <param name="id">User primary key.</param>
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Delete(Guid id) {
             await _service.DeleteAsync(id);
+
             return NoContent();
         }
     }
