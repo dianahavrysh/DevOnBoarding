@@ -1,29 +1,32 @@
+using Common;
+using Common.Database;
 using Common.Entities;
 using Common.Interfaces;
-using Common.Database;
-using Common;
+using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
-using BusinessLogic.Mappers;
 
 namespace BusinessLogic {
     /// <summary>
-    /// Business logic implementation for user operations. This class delegates to the data layer for persistence.
+    /// Business logic implementation for user operations.
+    /// This class delegates to the data layer for persistence.
     /// </summary>
     public class UsersManager : BaseDbManager, IUsersManager {
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UsersManager"/> class.
-        /// </summary>
-        /// <param name="factory">Database factory used to create provider-specific database instances.</param>
-        /// <param name="connectionContext">Connection context for this manager lifetime (scoped per request/user).</param>
-        public UsersManager(IDatabaseFactory factory, ConnectionContext connectionContext) : base(factory, connectionContext) {
+        public UsersManager(
+            IDatabaseFactory factory,
+            ConnectionContext connectionContext)
+            : base(factory, connectionContext) {
         }
 
         /// <inheritdoc />
         public async Task<Guid> InsertAsync(User user) {
+            var newUserPK = Db.CreateOutputParameter(
+                "NewUserPK",
+                DbType.Guid);
+
             var parameters = new List<IDataParameter>
             {
                 Param(nameof(User.UserName), user.UserName),
@@ -32,12 +35,18 @@ namespace BusinessLogic {
                 Param(nameof(User.ActiveStatus), user.ActiveStatus),
                 Param(nameof(User.RoleTypePK), user.RoleTypePK),
                 Param(nameof(User.FirstName), user.FirstName),
-                Param(nameof(User.SecondName), user.SecondName ?? (object)DBNull.Value),
-                Param(nameof(User.BirthDate), user.BirthDate ?? (object)DBNull.Value)
+                Param(nameof(User.SecondName), user.SecondName),
+                Param(nameof(User.BirthDate), user.BirthDate),
+                newUserPK
             };
 
-            var g = await Db.ExecuteScalarGuidAsync(StoreProcedureNames.UsersInsert, parameters: parameters);
-            return g;
+            await Db.ExecuteNonQueryAsync(
+                StoreProcedureNames.UsersInsert,
+                parameters: parameters);
+
+            return newUserPK.Value is Guid userPK
+                ? userPK
+                : Guid.Empty;
         }
 
         /// <inheritdoc />
@@ -51,11 +60,13 @@ namespace BusinessLogic {
                 Param(nameof(User.ActiveStatus), user.ActiveStatus),
                 Param(nameof(User.RoleTypePK), user.RoleTypePK),
                 Param(nameof(User.FirstName), user.FirstName),
-                Param(nameof(User.SecondName), user.SecondName ?? (object)DBNull.Value),
-                Param(nameof(User.BirthDate), user.BirthDate ?? (object)DBNull.Value)
+                Param(nameof(User.SecondName), user.SecondName),
+                Param(nameof(User.BirthDate), user.BirthDate)
             };
 
-            await Db.ExecuteNonQueryAsync(StoreProcedureNames.UsersUpdate, parameters: parameters);
+            await Db.ExecuteNonQueryAsync(
+                StoreProcedureNames.UsersUpdate,
+                parameters: parameters);
         }
 
         /// <inheritdoc />
@@ -65,22 +76,23 @@ namespace BusinessLogic {
                 Param(nameof(User.UserPK), userPK)
             };
 
-            await Db.ExecuteNonQueryAsync(StoreProcedureNames.UsersDelete, parameters: parameters);
+            await Db.ExecuteNonQueryAsync(
+                StoreProcedureNames.UsersDelete,
+                parameters: parameters);
         }
 
         /// <inheritdoc />
         public async Task<User?> GetByPKAsync(Guid userPK) {
-            User? user = null;
-            var parameters = new List<IDataParameter> { Param(nameof(User.UserPK), userPK) };
+            var parameters = new List<IDataParameter>
+            {
+                Param(nameof(User.UserPK), userPK)
+            };
 
-            using var reader = await Db.ExecuteReaderAsync(StoreProcedureNames.UsersSelectByPK, parameters: parameters);
-            var dbReader = (System.Data.Common.DbDataReader)reader;
+            using var reader = await Db.ExecuteReaderAsync(
+                StoreProcedureNames.UsersSelectByPK,
+                parameters: parameters);
 
-            if (await dbReader.ReadAsync()) {
-                user = UserReaderMapper.Map(reader);
-            }
-
-            return user;
+            return reader.Parse<User>().FirstOrDefault();
         }
 
         /// <inheritdoc />
@@ -106,17 +118,19 @@ namespace BusinessLogic {
 
             AddSearchByFieldParameters(parameters, searchByFields);
 
-            using var reader = await Db.ExecuteReaderAsync(StoreProcedureNames.UsersSelectByPage, parameters: parameters);
+            using var reader = await Db.ExecuteReaderAsync(
+                StoreProcedureNames.UsersSelectByPage,
+                parameters: parameters);
+
             var dbReader = (System.Data.Common.DbDataReader)reader;
 
-            var list = new List<User>();
-            while (await dbReader.ReadAsync()) {
-                list.Add(UserReaderMapper.Map(reader));
-            }
+            var list = reader.Parse<User>().ToList();
 
             var totalRows = 0;
+
             try {
-                if (await dbReader.NextResultAsync() && await dbReader.ReadAsync()) {
+                if (await dbReader.NextResultAsync() &&
+                    await dbReader.ReadAsync()) {
                     totalRows = dbReader.GetValue<int>("TotalRows");
                 }
             }
@@ -127,11 +141,16 @@ namespace BusinessLogic {
             return (list, totalRows);
         }
 
-        private void AddSearchByFieldParameters(List<IDataParameter> parameters, Dictionary<string, bool>? searchByFields) {
-            if (searchByFields == null) return;
+        private void AddSearchByFieldParameters(
+            List<IDataParameter> parameters,
+            Dictionary<string, bool>? searchByFields) {
+            if (searchByFields == null) {
+                return;
+            }
 
             foreach (var field in searchByFields) {
-                parameters.Add(Param($"SearchBy{field.Key}", field.Value));
+                parameters.Add(
+                    Param($"SearchBy{field.Key}", field.Value));
             }
         }
     }

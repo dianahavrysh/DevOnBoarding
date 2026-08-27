@@ -2,12 +2,9 @@ using AutoMapper;
 using Common.Entities;
 using Common.DTOs;
 
-namespace Services.Mappers
-{
-    public class UserMappingProfile : Profile
-    {
-        public UserMappingProfile()
-        {
+namespace Services.Mappers {
+    public class UserMappingProfile : Profile {
+        public UserMappingProfile() {
             CreateMap<User, UserDTO>()
                 .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.SecondName));
 
