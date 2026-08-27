@@ -16,7 +16,9 @@ BEGIN
 
 	IF @CurrentPage IS NULL OR @CurrentPage < 1 SET @CurrentPage = 1;
 	IF @PageSize IS NULL OR @PageSize < 1 SET @PageSize = 20;
-	DECLARE @Offset INT = (@CurrentPage - 1) * @PageSize;
+
+	DECLARE @StartRow INT = (@CurrentPage - 1) * @PageSize + 1;
+	DECLARE @EndRow INT = @StartRow + @PageSize - 1;
 
 	DECLARE @RequestingRoleName VARCHAR(50);
 	SELECT @RequestingRoleName = r.RoleName
@@ -102,30 +104,48 @@ BEGIN
 	END
 
 	DECLARE @Sql NVARCHAR(MAX) = N'
-	SELECT
-		u.UserPK,
-		u.UserName,
-		u.Email,
-		u.Password,
-		u.ActiveStatus,
-		u.RoleTypePK,
-		r.RoleName,
-		ud.FirstName,
-		ud.SecondName AS LastName,
-		ud.BirthDate,
-		COUNT(*) OVER() AS TotalRows
-	FROM dbo.Users u WITH (NOLOCK)
-	LEFT JOIN dbo.RoleTypes r WITH (NOLOCK) ON u.RoleTypePK = r.RoleTypePK
-	LEFT JOIN dbo.UserData ud WITH (NOLOCK) ON u.UserPK = ud.UserPK'
+	;WITH PagedUsers AS
+	(
+		SELECT
+			u.UserPK,
+			u.UserName,
+			u.Email,
+			u.Password,
+			u.ActiveStatus,
+			u.RoleTypePK,
+			r.RoleName,
+			ud.FirstName,
+			ud.SecondName AS LastName,
+			ud.BirthDate,
+			COUNT(*) OVER() AS TotalRows,
+			ROW_NUMBER() OVER (ORDER BY ' + @SortColumn + N' ' + @SortDirection + N') AS RowNum
+		FROM dbo.Users u WITH (NOLOCK)
+		LEFT JOIN dbo.RoleTypes r WITH (NOLOCK) ON u.RoleTypePK = r.RoleTypePK
+		LEFT JOIN dbo.UserData ud WITH (NOLOCK) ON u.UserPK = ud.UserPK'
 	+ @Where +
-	N' ORDER BY ' + @SortColumn + N' ' + @SortDirection +
-	N' OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;';
+	N'
+	)
+	SELECT
+		UserPK,
+		UserName,
+		Email,
+		Password,
+		ActiveStatus,
+		RoleTypePK,
+		RoleName,
+		FirstName,
+		LastName,
+		BirthDate,
+		TotalRows
+	FROM PagedUsers
+	WHERE RowNum BETWEEN @StartRow AND @EndRow
+	ORDER BY RowNum;';
 
 	EXEC sp_executesql
 		@Sql,
-		N'@SearchParam NVARCHAR(52), @Offset INT, @PageSize INT',
+		N'@SearchParam NVARCHAR(52), @StartRow INT, @EndRow INT',
 		@SearchParam = @SearchParam,
-		@Offset = @Offset,
-		@PageSize = @PageSize;
+		@StartRow = @StartRow,
+		@EndRow = @EndRow;
 END;
 GO
