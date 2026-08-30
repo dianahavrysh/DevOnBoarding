@@ -1,3 +1,4 @@
 <Solution>
-  <Project Path="DevOnBoarding.csproj" />
+  <Project Path="DataLayer/DataLayer.csproj" Id="ee98bba9-4efd-4513-b8e4-447c81bd2eac" />
+  <Project Path="DevOnBoarding/DevOnBoarding.csproj" />
 </Solution>
