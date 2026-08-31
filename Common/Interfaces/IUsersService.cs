@@ -16,7 +16,7 @@ namespace Common.Interfaces {
         /// <summary>
         /// Retrieve a paginated list of user DTOs asynchronously.
         /// </summary>
-        Task<(IEnumerable<UserDTO> Items, int TotalRows)> GetByPageAsync(
+        Task<(List<UserDTO> Items, int TotalRows)> GetByPageAsync(
             Guid requestingUserPK,
             int currentPage,
             int pageSize,
@@ -27,10 +27,9 @@ namespace Common.Interfaces {
             bool strictMatch);
 
         /// <summary>
-        /// Create a new user from the supplied DTO.
-        /// The generated primary key is stored in the DTO.
+        /// Create a new user and return the created user DTO.
         /// </summary>
-        Task<UserCreateUpdateDTO> CreateAsync(UserCreateUpdateDTO dto);
+        Task<UserDTO> CreateAsync(UserCreateUpdateDTO dto);
 
         /// <summary>
         /// Update an existing user using the primary key stored in the DTO.

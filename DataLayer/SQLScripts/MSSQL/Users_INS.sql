@@ -1,31 +1,66 @@
 CREATE PROCEDURE dbo.Users_INS
-	@UserName NVARCHAR(50),
-	@Email NVARCHAR(50),
-	@Password NVARCHAR(50),
-	@ActiveStatus BIT,
-	@RoleTypePK UNIQUEIDENTIFIER,
-	@FirstName NVARCHAR(50),
-	@SecondName NVARCHAR(50) = NULL,
-	@BirthDate DATETIME2(7) = NULL,
-	@NewUserPK UNIQUEIDENTIFIER OUTPUT
+    @UserName NVARCHAR(50),
+    @Email NVARCHAR(50),
+    @Password NVARCHAR(50),
+    @ActiveStatus BIT,
+    @RoleTypePK UNIQUEIDENTIFIER,
+    @FirstName NVARCHAR(50),
+    @SecondName NVARCHAR(50) = NULL,
+    @BirthDate DATETIME2(7) = NULL
 AS
 BEGIN
-	SET NOCOUNT ON;
-	BEGIN TRANSACTION;
-	BEGIN TRY
-		SET @NewUserPK = NEWSEQUENTIALID();
+    SET NOCOUNT ON;
 
-		INSERT INTO dbo.Users (UserPK, UserName, Email, Password, ActiveStatus, RoleTypePK)
-		VALUES (@NewUserPK, @UserName, @Email, @Password, @ActiveStatus, @RoleTypePK);
+    BEGIN TRANSACTION;
 
-		INSERT INTO dbo.UserData (UserPK, FirstName, SecondName, BirthDate)
-		VALUES (@NewUserPK, @FirstName, @SecondName, @BirthDate);
+    BEGIN TRY
+        DECLARE @NewUserPK TABLE
+        (
+            UserPK UNIQUEIDENTIFIER
+        );
 
-		COMMIT TRANSACTION;
-	END TRY
-	BEGIN CATCH
-		IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-		THROW;
-	END CATCH
+        INSERT INTO dbo.Users
+        (
+            UserName,
+            Email,
+            Password,
+            ActiveStatus,
+            RoleTypePK
+        )
+        OUTPUT INSERTED.UserPK INTO @NewUserPK
+        VALUES
+        (
+            @UserName,
+            @Email,
+            @Password,
+            @ActiveStatus,
+            @RoleTypePK
+        );
+
+        INSERT INTO dbo.UserData
+        (
+            UserPK,
+            FirstName,
+            SecondName,
+            BirthDate
+        )
+        SELECT
+            UserPK,
+            @FirstName,
+            @SecondName,
+            @BirthDate
+        FROM @NewUserPK;
+
+        COMMIT TRANSACTION;
+
+        SELECT UserPK
+        FROM @NewUserPK;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
 END;
 GO

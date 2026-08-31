@@ -5,92 +5,78 @@ using System.Threading.Tasks;
 
 namespace Common.Database {
     /// <summary>
-    /// Abstract base class for provider-specific database implementations.
-    /// Implements the shared execution algorithm (open connection → create command →
-    /// add parameters → execute → return) via the Template Method pattern.
-    /// Concrete providers only need to supply the provider-specific primitives
-    /// (connection/parameter creation and the low-level async execution calls).
+    /// Abstract database implementation that contains common command execution logic.
+    /// Provider-specific implementations supply connections, parameters and low-level execution.
     /// </summary>
     public abstract class Database {
         /// <summary>
-        /// The connection string used by provider implementations to create connections.
-        /// Protected so derived classes can use it when constructing provider objects.
+        /// The connection string used to connect to the database.
         /// </summary>
         protected readonly string _connectionString;
 
         /// <summary>
-        /// Initializes the database base with the provided provider-specific connection string.
+        /// Initializes a new instance of the <see cref="Database"/> class with the specified connection string.
         /// </summary>
-        /// <param name="connectionString">Provider connection string.</param>
+        /// <param name="connectionString"></param>
         protected Database(string connectionString) {
             _connectionString = connectionString;
         }
 
         /// <summary>
-        /// Create a new <see cref="IDbConnection"/> for the underlying provider.
+        /// Creates a provider-specific database connection.
         /// </summary>
-        /// <returns>A closed <see cref="IDbConnection"/> instance ready to be opened.</returns>
         public abstract IDbConnection CreateConnection();
 
         /// <summary>
-        /// Default implementation that creates a command for the specified connection.
-        /// Providers may override if they need custom command initialization.
+        /// Creates a command for the specified connection.
         /// </summary>
         public virtual IDbCommand CreateCommand(
             string commandText,
             IDbConnection connection,
             CommandType commandType = CommandType.StoredProcedure) {
-            var cmd = connection.CreateCommand();
-            cmd.CommandText = commandText;
-            cmd.CommandType = commandType;
-            return cmd;
+            var command = connection.CreateCommand();
+
+            command.CommandText = commandText;
+            command.CommandType = commandType;
+
+            return command;
         }
 
         /// <summary>
-        /// Create a provider-specific parameter for commands.
+        /// Creates a provider-specific database parameter.
         /// </summary>
-        /// <param name="name">
-        /// Parameter name (provider prefix is applied by implementations when needed).
-        /// </param>
-        /// <param name="value">
-        /// Parameter value or <c>null</c> to represent <see cref="DBNull.Value"/>.
-        /// </param>
-        /// <param name="type">Optional <see cref="DbType"/> for the parameter.</param>
-        /// <returns>An <see cref="IDataParameter"/> instance.</returns>
         public abstract IDataParameter CreateParameter(
             string name,
             object? value,
-            System.Data.DbType? type = null);
+            DbType? type = null);
 
         /// <summary>
-        /// Create a provider-specific output parameter, whose value can be read from the
-        /// same <see cref="IDataParameter"/> instance after the command has executed.
+        /// Creates a provider-specific output parameter.
         /// </summary>
-        /// <param name="name">
-        /// Parameter name (provider prefix is applied by implementations when needed).
-        /// </param>
-        /// <param name="type">
-        /// The <see cref="DbType"/> of the value the procedure will output.
-        /// </param>
         public abstract IDataParameter CreateOutputParameter(
             string name,
-            System.Data.DbType type);
+            DbType type);
 
         /// <summary>
-        /// Execute a command that returns a data reader asynchronously.
-        /// The caller is responsible for disposing the returned <see cref="IDataReader"/>;
-        /// the underlying connection will be closed when the reader is disposed.
+        /// Executes a command and returns a data reader.
+        /// The connection is closed when the reader is disposed.
         /// </summary>
         public virtual async Task<IDataReader> ExecuteReaderAsync(
             string commandText,
             CommandType commandType = CommandType.StoredProcedure,
             IEnumerable<IDataParameter>? parameters = null) {
             var connection = CreateConnection();
-            var command = CreateCommand(commandText, connection, commandType);
-            AddParameters(command, parameters);
 
             try {
+                using var command = CreateCommand(
+                    commandText,
+                    connection,
+                    commandType);
+
+                AddParameters(command, parameters);
+
                 await OpenAsync(connection);
+
                 return await ExecuteReaderCoreAsync(command);
             }
             catch {
@@ -100,87 +86,111 @@ namespace Common.Database {
         }
 
         /// <summary>
-        /// Execute a command that does not return rows (INSERT/UPDATE/DELETE) asynchronously.
+        /// Executes a command that does not return rows.
         /// </summary>
         public virtual async Task<int> ExecuteNonQueryAsync(
             string commandText,
             CommandType commandType = CommandType.StoredProcedure,
             IEnumerable<IDataParameter>? parameters = null) {
             using var connection = CreateConnection();
+
             await OpenAsync(connection);
 
-            using var command = CreateCommand(commandText, connection, commandType);
+            using var command = CreateCommand(
+                commandText,
+                connection,
+                commandType);
+
             AddParameters(command, parameters);
 
             return await ExecuteNonQueryCoreAsync(command);
         }
 
         /// <summary>
-        /// Execute a command and return the first column of the first row in the result set asynchronously.
+        /// Executes a command and returns the first column of the first row.
         /// </summary>
         public virtual async Task<object?> ExecuteScalarAsync(
             string commandText,
             CommandType commandType = CommandType.StoredProcedure,
             IEnumerable<IDataParameter>? parameters = null) {
             using var connection = CreateConnection();
+
             await OpenAsync(connection);
 
-            using var command = CreateCommand(commandText, connection, commandType);
+            using var command = CreateCommand(
+                commandText,
+                connection,
+                commandType);
+
             AddParameters(command, parameters);
 
             return await ExecuteScalarCoreAsync(command);
         }
 
         /// <summary>
-        /// Execute a scalar command and parse the result as a Guid.
-        /// Returns Guid.Empty when the result is null, DBNull.Value or not parsable.
+        /// Executes a command and converts the scalar result to the requested type.
         /// </summary>
-        public virtual async Task<Guid> ExecuteScalarGuidAsync(
+        public virtual async Task<T?> ExecuteScalarAsync<T>(
             string commandText,
             CommandType commandType = CommandType.StoredProcedure,
             IEnumerable<IDataParameter>? parameters = null) {
-            var obj = await ExecuteScalarAsync(commandText, commandType, parameters);
+            var value = await ExecuteScalarAsync(
+                commandText,
+                commandType,
+                parameters);
 
-            if (obj == null || obj == DBNull.Value)
-                return Guid.Empty;
+            if (value == null || value == DBNull.Value) {
+                return default;
+            }
 
-            return Guid.TryParse(obj.ToString(), out var g) ? g : Guid.Empty;
+            if (value is T result) {
+                return result;
+            }
+
+            if (typeof(T) == typeof(Guid) &&
+                Guid.TryParse(value.ToString(), out var guid)) {
+                return (T)(object)guid;
+            }
+
+            return (T)Convert.ChangeType(value, typeof(T));
         }
 
         /// <summary>
-        /// Adds the supplied parameters to the command.
-        /// Shared helper for all execution paths.
+        /// Adds the specified parameters to the command.
         /// </summary>
         private static void AddParameters(
             IDbCommand command,
             IEnumerable<IDataParameter>? parameters) {
-            if (parameters == null)
+            if (parameters == null) {
                 return;
+            }
 
-            foreach (var parameter in parameters)
+            foreach (var parameter in parameters) {
                 command.Parameters.Add(parameter);
+            }
         }
 
         /// <summary>
-        /// Opens the given connection asynchronously using the provider-specific API.
+        /// Opens the specified connection asynchronously.
         /// </summary>
         protected abstract Task OpenAsync(IDbConnection connection);
 
         /// <summary>
-        /// Executes the given command as a reader asynchronously using the provider-specific API.
-        /// Implementations should use <see cref="CommandBehavior.CloseConnection"/> so the connection
-        /// is closed automatically when the returned reader is disposed.
+        /// Executes the command and returns a data reader asynchronously.
         /// </summary>
-        protected abstract Task<IDataReader> ExecuteReaderCoreAsync(IDbCommand command);
+        protected abstract Task<IDataReader> ExecuteReaderCoreAsync(
+            IDbCommand command);
 
         /// <summary>
-        /// Executes the given command as a non-query asynchronously using the provider-specific API.
+        /// Executes the command that does not return rows asynchronously.
         /// </summary>
-        protected abstract Task<int> ExecuteNonQueryCoreAsync(IDbCommand command);
+        protected abstract Task<int> ExecuteNonQueryCoreAsync(
+            IDbCommand command);
 
         /// <summary>
-        /// Executes the given command as a scalar asynchronously using the provider-specific API.
+        /// Executes the command and returns the first column of the first row asynchronously.
         /// </summary>
-        protected abstract Task<object?> ExecuteScalarCoreAsync(IDbCommand command);
+        protected abstract Task<object?> ExecuteScalarCoreAsync(
+            IDbCommand command);
     }
 }

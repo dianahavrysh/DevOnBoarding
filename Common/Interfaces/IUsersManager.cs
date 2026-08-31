@@ -29,7 +29,7 @@ namespace Common.Interfaces
         /// <summary>
         /// Update a user asynchronously.
         /// </summary>
-        Task UpdateAsync(User user);
+        Task<bool> UpdateAsync(User user);
 
         /// <summary>
         /// Delete a user by primary key asynchronously.

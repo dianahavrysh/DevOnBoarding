@@ -17,7 +17,7 @@ namespace Services {
         private readonly IMapper _mapper;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="UsersService"/>.
+        /// Initializes a new instance of the <see cref="UsersService"/> class.
         /// </summary>
         public UsersService(
             IUsersManager manager,
@@ -29,16 +29,19 @@ namespace Services {
         }
 
         /// <inheritdoc />
-        public async Task<UserCreateUpdateDTO> CreateAsync(
-            UserCreateUpdateDTO dto) {
+        public async Task<UserDTO> CreateAsync(UserCreateUpdateDTO dto) {
             try {
                 var user = _mapper.Map<User>(dto);
 
                 var userPK = await _manager.InsertAsync(user);
+                var createdUser = await _manager.GetByPKAsync(userPK);
 
-                dto.UserPK = userPK;
+                if (createdUser == null) {
+                    throw new InvalidOperationException(
+                        $"User with PK {userPK} was not found after creation.");
+                }
 
-                return dto;
+                return _mapper.Map<UserDTO>(createdUser);
             }
             catch (Exception ex) {
                 _logger.LogError(ex, "Error creating user");
@@ -66,11 +69,9 @@ namespace Services {
             try {
                 var user = await _manager.GetByPKAsync(userPK);
 
-                if (user == null) {
-                    return null;
-                }
-
-                return _mapper.Map<UserDTO>(user);
+                return user == null
+                    ? null
+                    : _mapper.Map<UserDTO>(user);
             }
             catch (Exception ex) {
                 _logger.LogError(
@@ -83,7 +84,7 @@ namespace Services {
         }
 
         /// <inheritdoc />
-        public async Task<(IEnumerable<UserDTO> Items, int TotalRows)> GetByPageAsync(
+        public async Task<(List<UserDTO> Items, int TotalRows)> GetByPageAsync(
             Guid requestingUserPK,
             int currentPage,
             int pageSize,
@@ -103,14 +104,16 @@ namespace Services {
                     includeInactive,
                     strictMatch);
 
-                var mappedItems = _mapper.Map<IEnumerable<UserDTO>>(items);
-
-                return (mappedItems, total);
+                return (
+                    _mapper.Map<List<UserDTO>>(items),
+                    total);
             }
             catch (Exception ex) {
                 _logger.LogError(
                     ex,
-                    "Error getting users page (RequestingUserPK={RequestingUserPK}, Page={CurrentPage}, PageSize={PageSize})",
+                    "Error getting users page " +
+                    "(RequestingUserPK={RequestingUserPK}, " +
+                    "Page={CurrentPage}, PageSize={PageSize})",
                     requestingUserPK,
                     currentPage,
                     pageSize);
@@ -120,20 +123,11 @@ namespace Services {
         }
 
         /// <inheritdoc />
-        public async Task<bool> UpdateAsync(
-            UserCreateUpdateDTO dto) {
+        public async Task<bool> UpdateAsync(UserCreateUpdateDTO dto) {
             try {
-                var existing = await _manager.GetByPKAsync(dto.UserPK);
+                var user = _mapper.Map<User>(dto);
 
-                if (existing == null) {
-                    return false;
-                }
-
-                _mapper.Map(dto, existing);
-
-                await _manager.UpdateAsync(existing);
-
-                return true;
+                return await _manager.UpdateAsync(user);
             }
             catch (Exception ex) {
                 _logger.LogError(

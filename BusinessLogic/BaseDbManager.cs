@@ -1,38 +1,58 @@
+using Common;
 using Common.Database;
 using Common.Interfaces;
-using Common;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Threading.Tasks;
 
 namespace BusinessLogic {
     /// <summary>
-    /// Base class for database-backed business managers. Provides access to the configured <see cref="Database"/> instance
-    /// and helper methods for creating parameters.
+    /// Base class for database-backed managers.
     /// </summary>
     public abstract class BaseDbManager {
-        /// <summary>
-        /// The provider-specific database instance used to execute commands.
-        /// </summary>
-        protected readonly Database Db;
+        private readonly Database _db;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BaseDbManager"/> class.
-        /// </summary>
-        /// <param name="factory">Factory used to create the database instance.</param>
-        /// <param name="connectionContext">Per-request connection context (DB type + connection string).</param>
         protected BaseDbManager(
             IDatabaseFactory factory,
             ConnectionContext connectionContext) {
-            Db = factory.CreateDatabase(connectionContext);
+            _db = factory.CreateDatabase(connectionContext);
         }
 
-        /// <summary>
-        /// Creates a database parameter with the given name and value.
-        /// </summary>
-        /// <param name="name">Parameter name without the <c>@</c> prefix.</param>
-        /// <param name="value">Parameter value.</param>
-        /// <returns>A provider-specific <see cref="IDataParameter"/> instance.</returns>
-        protected IDataParameter Param(string name, object? value) {
-            return Db.CreateParameter(name, value);
+        protected IDataParameter CreateParam(
+            string name,
+            object? value) {
+            return _db.CreateParameter(name, value);
+        }
+
+        protected IDataParameter CreateOutputParam(
+            string name,
+            DbType type) {
+            return _db.CreateOutputParameter(name, type);
+        }
+
+        protected Task<int> ExecuteNonQueryAsync(
+            string commandText,
+            IEnumerable<IDataParameter>? parameters = null) {
+            return _db.ExecuteNonQueryAsync(
+                commandText,
+                parameters: parameters);
+        }
+
+        protected Task<IDataReader> ExecuteReaderAsync(
+            string commandText,
+            IEnumerable<IDataParameter>? parameters = null) {
+            return _db.ExecuteReaderAsync(
+                commandText,
+                parameters: parameters);
+        }
+
+        protected Task<T?> ExecuteScalarAsync<T>(
+            string commandText,
+            IEnumerable<IDataParameter>? parameters = null) {
+            return _db.ExecuteScalarAsync<T>(
+                commandText,
+                parameters: parameters);
         }
     }
 }
