@@ -17,14 +17,21 @@ BEGIN
 	BEGIN TRANSACTION;
 	BEGIN TRY
 		UPDATE dbo.Users
-		SET UserName = @UserName, Email = @Email, Password = @Password,
-		    ActiveStatus = @ActiveStatus, RoleTypePK = @RoleTypePK
+		SET 
+			UserName = @UserName, 
+			Email = @Email, 
+			Password = @Password,
+		    ActiveStatus = @ActiveStatus,
+			RoleTypePK = @RoleTypePK
 		WHERE UserPK = @UserPK;
 
 		IF @@ROWCOUNT > 0
 		BEGIN
 			UPDATE dbo.UserData
-			SET FirstName = @FirstName, SecondName = @SecondName, BirthDate = @BirthDate
+			SET 
+				FirstName = @FirstName, 
+				SecondName = @SecondName, 
+				BirthDate = @BirthDate
 			WHERE UserPK = @UserPK;
 
 			SET @Found = 1;

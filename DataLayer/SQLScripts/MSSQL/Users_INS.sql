@@ -6,7 +6,8 @@ CREATE PROCEDURE dbo.Users_INS
     @RoleTypePK UNIQUEIDENTIFIER,
     @FirstName NVARCHAR(50),
     @SecondName NVARCHAR(50) = NULL,
-    @BirthDate DATETIME2(7) = NULL
+    @BirthDate DATETIME2(7) = NULL,
+    @NewUserPK UNIQUEIDENTIFIER OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -14,22 +15,20 @@ BEGIN
     BEGIN TRANSACTION;
 
     BEGIN TRY
-        DECLARE @NewUserPK TABLE
-        (
-            UserPK UNIQUEIDENTIFIER
-        );
+        SET @NewUserPK = NEWSEQUENTIALID();
 
         INSERT INTO dbo.Users
         (
+            UserPK,
             UserName,
             Email,
             Password,
             ActiveStatus,
             RoleTypePK
         )
-        OUTPUT INSERTED.UserPK INTO @NewUserPK
         VALUES
         (
+            @NewUserPK,
             @UserName,
             @Email,
             @Password,
@@ -44,17 +43,15 @@ BEGIN
             SecondName,
             BirthDate
         )
-        SELECT
-            UserPK,
+        VALUES
+        (
+            @NewUserPK,
             @FirstName,
             @SecondName,
             @BirthDate
-        FROM @NewUserPK;
+        );
 
         COMMIT TRANSACTION;
-
-        SELECT UserPK
-        FROM @NewUserPK;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
@@ -63,4 +60,3 @@ BEGIN
         THROW;
     END CATCH
 END;
-GO

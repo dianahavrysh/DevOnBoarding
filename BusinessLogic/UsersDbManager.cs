@@ -22,6 +22,10 @@ namespace BusinessLogic {
 
         /// <inheritdoc />
         public async Task<Guid> InsertAsync(User user) {
+            var newUserPK = CreateOutputParam(
+                "NewUserPK",
+                DbType.Guid);
+
             var parameters = new List<IDataParameter>
             {
                 CreateParam(nameof(User.UserName), user.UserName),
@@ -31,14 +35,15 @@ namespace BusinessLogic {
                 CreateParam(nameof(User.RoleTypePK), user.RoleTypePK),
                 CreateParam(nameof(User.FirstName), user.FirstName),
                 CreateParam(nameof(User.SecondName), user.SecondName),
-                CreateParam(nameof(User.BirthDate), user.BirthDate)
+                CreateParam(nameof(User.BirthDate), user.BirthDate),
+                newUserPK
             };
 
-            var userPK = await ExecuteScalarAsync<Guid>(
+            await ExecuteNonQueryAsync(
                 StoreProcedureNames.UsersInsert,
                 parameters);
 
-            if (userPK == Guid.Empty) {
+            if (newUserPK.Value is not Guid userPK || userPK == Guid.Empty) {
                 throw new InvalidOperationException(
                     "Users_INS did not return the created user's primary key.");
             }
