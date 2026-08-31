@@ -15,26 +15,31 @@ BEGIN
     BEGIN TRANSACTION;
 
     BEGIN TRY
-        SET @NewUserPK = NEWSEQUENTIALID();
+        DECLARE @NewUser TABLE
+        (
+            UserPK UNIQUEIDENTIFIER
+        );
 
         INSERT INTO dbo.Users
         (
-            UserPK,
             UserName,
             Email,
             Password,
             ActiveStatus,
             RoleTypePK
         )
+        OUTPUT INSERTED.UserPK INTO @NewUser(UserPK)
         VALUES
         (
-            @NewUserPK,
             @UserName,
             @Email,
             @Password,
             @ActiveStatus,
             @RoleTypePK
         );
+
+        SELECT @NewUserPK = UserPK
+        FROM @NewUser;
 
         INSERT INTO dbo.UserData
         (
@@ -60,3 +65,4 @@ BEGIN
         THROW;
     END CATCH
 END;
+GO

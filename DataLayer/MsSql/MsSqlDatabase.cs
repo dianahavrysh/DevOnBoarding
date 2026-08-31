@@ -39,9 +39,13 @@ namespace DataLayer.MsSql {
             System.Data.DbType type) {
             var paramName = name.StartsWith("@") ? name : "@" + name;
 
-            return new SqlParameter(paramName, type) {
+            var parameter = new SqlParameter {
+                ParameterName = paramName,
+                DbType = type,
                 Direction = ParameterDirection.Output
             };
+
+            return parameter;
         }
 
         /// <inheritdoc/>

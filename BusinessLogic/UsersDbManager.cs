@@ -142,18 +142,25 @@ namespace BusinessLogic {
         }
 
         private void AddSearchByFieldParameters(
-            List<IDataParameter> parameters,
+            ICollection<IDataParameter> parameters,
             Dictionary<string, bool>? searchByFields) {
-            if (searchByFields == null) {
-                return;
-            }
+            searchByFields ??= new Dictionary<string, bool>();
 
-            foreach (var field in searchByFields) {
-                parameters.Add(
-                    CreateParam(
-                        $"SearchBy{field.Key}",
-                        field.Value));
-            }
+            parameters.Add(CreateParam(
+                "SearchByUserName",
+                searchByFields.GetValueOrDefault("UserName")));
+
+            parameters.Add(CreateParam(
+                "SearchByEmail",
+                searchByFields.GetValueOrDefault("Email")));
+
+            parameters.Add(CreateParam(
+                "SearchByFirstName",
+                searchByFields.GetValueOrDefault("FirstName")));
+
+            parameters.Add(CreateParam(
+                "SearchBySecondName",
+                searchByFields.GetValueOrDefault("SecondName")));
         }
 
         private sealed class UserPageRow : User {
