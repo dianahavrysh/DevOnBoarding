@@ -29,19 +29,11 @@ namespace Services {
         }
 
         /// <inheritdoc />
-        public async Task<UserDTO> CreateAsync(UserCreateUpdateDTO dto) {
+        public async Task<Guid> CreateAsync(UserCreateUpdateDTO dto) {
             try {
                 var user = _mapper.Map<User>(dto);
 
-                var userPK = await _manager.InsertAsync(user);
-                var createdUser = await _manager.GetByPKAsync(userPK);
-
-                if (createdUser == null) {
-                    throw new InvalidOperationException(
-                        $"User with PK {userPK} was not found after creation.");
-                }
-
-                return _mapper.Map<UserDTO>(createdUser);
+                return await _manager.InsertAsync(user);
             }
             catch (Exception ex) {
                 _logger.LogError(ex, "Error creating user");
@@ -69,9 +61,7 @@ namespace Services {
             try {
                 var user = await _manager.GetByPKAsync(userPK);
 
-                return user == null
-                    ? null
-                    : _mapper.Map<UserDTO>(user);
+                return _mapper.Map<UserDTO>(user);
             }
             catch (Exception ex) {
                 _logger.LogError(

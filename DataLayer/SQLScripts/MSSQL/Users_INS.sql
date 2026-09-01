@@ -15,31 +15,26 @@ BEGIN
     BEGIN TRANSACTION;
 
     BEGIN TRY
-        DECLARE @NewUser TABLE
-        (
-            UserPK UNIQUEIDENTIFIER
-        );
+        SET @NewUserPK = NEWID();
 
         INSERT INTO dbo.Users
         (
+            UserPK,
             UserName,
             Email,
             Password,
             ActiveStatus,
             RoleTypePK
         )
-        OUTPUT INSERTED.UserPK INTO @NewUser(UserPK)
         VALUES
         (
+            @NewUserPK,
             @UserName,
             @Email,
             @Password,
             @ActiveStatus,
             @RoleTypePK
         );
-
-        SELECT @NewUserPK = UserPK
-        FROM @NewUser;
 
         INSERT INTO dbo.UserData
         (

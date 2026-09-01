@@ -29,7 +29,7 @@ namespace Common.Interfaces {
         /// <summary>
         /// Create a new user and return the created user DTO.
         /// </summary>
-        Task<UserDTO> CreateAsync(UserCreateUpdateDTO dto);
+        Task<Guid> CreateAsync(UserCreateUpdateDTO dto);
 
         /// <summary>
         /// Update an existing user using the primary key stored in the DTO.

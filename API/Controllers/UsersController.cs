@@ -33,11 +33,9 @@ namespace API.Controllers {
         public async Task<IActionResult> GetByPK(Guid id) {
             var dto = await _service.GetByPKAsync(id);
 
-            if (dto == null) {
-                return NotFound();
-            }
-
-            return Ok(dto);
+            return dto is null
+                ? NotFound()
+                : Ok(dto);
         }
 
         /// <summary>
@@ -72,17 +70,17 @@ namespace API.Controllers {
         /// Create a new user.
         /// </summary>
         /// <param name="dto">Write DTO containing user data.</param>
-        /// <returns>201 Created with the created user.</returns>
+        /// <returns>201 Created with the location of the new user.</returns>
         [HttpPost]
-        [ProducesResponseType(typeof(UserDTO), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] UserCreateUpdateDTO dto) {
-            var created = await _service.CreateAsync(dto);
+            var userPK = await _service.CreateAsync(dto);
 
             return CreatedAtAction(
                 nameof(GetByPK),
-                new { id = created.UserPK },
-                created);
+                new { id = userPK },
+                userPK);
         }
 
         /// <summary>
@@ -98,11 +96,9 @@ namespace API.Controllers {
         public async Task<IActionResult> Update([FromBody] UserCreateUpdateDTO dto) {
             var updated = await _service.UpdateAsync(dto);
 
-            if (!updated) {
-                return NotFound();
-            }
-
-            return NoContent();
+            return updated
+                ? NoContent()
+                : NotFound();
         }
 
         /// <summary>

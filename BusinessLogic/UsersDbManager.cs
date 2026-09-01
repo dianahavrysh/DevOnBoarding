@@ -6,7 +6,7 @@ using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
+using System.Data.Common;
 using System.Threading.Tasks;
 
 namespace DAL {
@@ -26,18 +26,8 @@ namespace DAL {
                 "NewUserPK",
                 DbType.Guid);
 
-            var parameters = new List<IDataParameter>
-            {
-                CreateParam(nameof(User.UserName), user.UserName),
-                CreateParam(nameof(User.Email), user.Email),
-                CreateParam(nameof(User.Password), user.Password),
-                CreateParam(nameof(User.ActiveStatus), user.ActiveStatus),
-                CreateParam(nameof(User.RoleTypePK), user.RoleTypePK),
-                CreateParam(nameof(User.FirstName), user.FirstName),
-                CreateParam(nameof(User.SecondName), user.SecondName),
-                CreateParam(nameof(User.BirthDate), user.BirthDate),
-                newUserPK
-            };
+            var parameters = BuildUserParameters(user, includeUserPK: false);
+            parameters.Add(newUserPK);
 
             await ExecuteNonQueryAsync(
                 StoreProcedureNames.UsersInsert,
@@ -57,19 +47,8 @@ namespace DAL {
                 "Found",
                 DbType.Boolean);
 
-            var parameters = new List<IDataParameter>
-            {
-                CreateParam(nameof(User.UserPK), user.UserPK),
-                CreateParam(nameof(User.UserName), user.UserName),
-                CreateParam(nameof(User.Email), user.Email),
-                CreateParam(nameof(User.Password), user.Password),
-                CreateParam(nameof(User.ActiveStatus), user.ActiveStatus),
-                CreateParam(nameof(User.RoleTypePK), user.RoleTypePK),
-                CreateParam(nameof(User.FirstName), user.FirstName),
-                CreateParam(nameof(User.SecondName), user.SecondName),
-                CreateParam(nameof(User.BirthDate), user.BirthDate),
-                found
-            };
+            var parameters = BuildUserParameters(user, includeUserPK: true);
+            parameters.Add(found);
 
             await ExecuteNonQueryAsync(
                 StoreProcedureNames.UsersUpdate,
@@ -101,7 +80,15 @@ namespace DAL {
                 StoreProcedureNames.UsersSelectByPK,
                 parameters);
 
-            return reader.Parse<User>().FirstOrDefault();
+            var dbReader = (DbDataReader)reader;
+
+            if (!await dbReader.ReadAsync()) {
+                return null;
+            }
+
+            var parseUser = dbReader.GetRowParser<User>();
+
+            return parseUser(dbReader);
         }
 
         /// <inheritdoc />
@@ -125,20 +112,60 @@ namespace DAL {
                 CreateParam(nameof(StrictMatch), StrictMatch)
             };
 
-            AddSearchByFieldParameters(
-                parameters,
-                SearchByFields);
+            AddSearchByFieldParameters(parameters, SearchByFields);
 
             using var reader = await ExecuteReaderAsync(
                 StoreProcedureNames.UsersSelectByPage,
                 parameters);
 
-            var rows = reader.Parse<UserPageRow>().ToList();
-            var totalRows = rows.FirstOrDefault()?.TotalRows ?? 0;
+            var dbReader = (DbDataReader)reader;
+            var items = new List<User>();
+            var totalRows = 0;
 
-            return (
-                rows.Cast<User>().ToList(),
-                totalRows);
+            if (await dbReader.ReadAsync()) {
+                var parseUser = dbReader.GetRowParser<User>();
+
+                // "TotalRows" is expected to always be present (COUNT(*) OVER() in SQL).
+                // GetOrdinal throws if it's missing, which is the desired behavior here:
+                // a missing column means the stored procedure's contract was broken,
+                // and that should fail loudly rather than silently return 0.
+                var totalRowsOrdinal = dbReader.GetOrdinal("TotalRows");
+
+                do {
+                    items.Add(parseUser(dbReader));
+
+                    if (!dbReader.IsDBNull(totalRowsOrdinal)) {
+                        totalRows = dbReader.GetInt32(totalRowsOrdinal);
+                    }
+                }
+                while (await dbReader.ReadAsync());
+            }
+
+            return (items, totalRows);
+        }
+
+        /// <summary>
+        /// Builds the shared set of parameters used by both <see cref="InsertAsync"/> and
+        /// <see cref="UpdateAsync"/>, to avoid repeating the same eight parameters twice.
+        /// The output parameter (NewUserPK / Found) is added by the caller.
+        /// </summary>
+        private List<IDataParameter> BuildUserParameters(User user, bool includeUserPK) {
+            var parameters = new List<IDataParameter>();
+
+            if (includeUserPK) {
+                parameters.Add(CreateParam(nameof(User.UserPK), user.UserPK));
+            }
+
+            parameters.Add(CreateParam(nameof(User.UserName), user.UserName));
+            parameters.Add(CreateParam(nameof(User.Email), user.Email));
+            parameters.Add(CreateParam(nameof(User.Password), user.Password));
+            parameters.Add(CreateParam(nameof(User.ActiveStatus), user.ActiveStatus));
+            parameters.Add(CreateParam(nameof(User.RoleTypePK), user.RoleTypePK));
+            parameters.Add(CreateParam(nameof(User.FirstName), user.FirstName));
+            parameters.Add(CreateParam(nameof(User.SecondName), user.SecondName));
+            parameters.Add(CreateParam(nameof(User.BirthDate), user.BirthDate));
+
+            return parameters;
         }
 
         private void AddSearchByFieldParameters(
@@ -149,22 +176,15 @@ namespace DAL {
             parameters.Add(CreateParam(
                 "SearchByUserName",
                 searchByFields.GetValueOrDefault("UserName")));
-
             parameters.Add(CreateParam(
                 "SearchByEmail",
                 searchByFields.GetValueOrDefault("Email")));
-
             parameters.Add(CreateParam(
                 "SearchByFirstName",
                 searchByFields.GetValueOrDefault("FirstName")));
-
             parameters.Add(CreateParam(
                 "SearchBySecondName",
                 searchByFields.GetValueOrDefault("SecondName")));
-        }
-
-        private sealed class UserPageRow : User {
-            public int TotalRows { get; set; }
         }
     }
 }
