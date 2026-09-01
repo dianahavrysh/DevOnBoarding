@@ -70,17 +70,17 @@ namespace API.Controllers {
         /// Create a new user.
         /// </summary>
         /// <param name="dto">Write DTO containing user data.</param>
-        /// <returns>201 Created with the location of the new user.</returns>
+        /// <returns>201 Created with the created user.</returns>
         [HttpPost]
-        [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(UserDTO), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] UserCreateUpdateDTO dto) {
-            var userPK = await _service.CreateAsync(dto);
+            var created = await _service.CreateAsync(dto);
 
             return CreatedAtAction(
                 nameof(GetByPK),
-                new { id = userPK },
-                userPK);
+                new { id = created.UserPK },
+                created);
         }
 
         /// <summary>

@@ -29,11 +29,14 @@ namespace Services {
         }
 
         /// <inheritdoc />
-        public async Task<Guid> CreateAsync(UserCreateUpdateDTO dto) {
+        public async Task<UserDTO> CreateAsync(UserCreateUpdateDTO dto) {
             try {
                 var user = _mapper.Map<User>(dto);
+                var userPK = await _manager.InsertAsync(user);
 
-                return await _manager.InsertAsync(user);
+                user.UserPK = userPK;
+
+                return _mapper.Map<UserDTO>(user);
             }
             catch (Exception ex) {
                 _logger.LogError(ex, "Error creating user");
