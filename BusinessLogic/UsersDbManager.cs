@@ -124,19 +124,14 @@ namespace DAL {
 
             if (await dbReader.ReadAsync()) {
                 var parseUser = dbReader.GetRowParser<User>();
-
-                // "TotalRows" is expected to always be present (COUNT(*) OVER() in SQL).
-                // GetOrdinal throws if it's missing, which is the desired behavior here:
-                // a missing column means the stored procedure's contract was broken,
-                // and that should fail loudly rather than silently return 0.
                 var totalRowsOrdinal = dbReader.GetOrdinal("TotalRows");
+
+                totalRows = dbReader.IsDBNull(totalRowsOrdinal)
+                    ? 0
+                    : dbReader.GetInt32(totalRowsOrdinal);
 
                 do {
                     items.Add(parseUser(dbReader));
-
-                    if (!dbReader.IsDBNull(totalRowsOrdinal)) {
-                        totalRows = dbReader.GetInt32(totalRowsOrdinal);
-                    }
                 }
                 while (await dbReader.ReadAsync());
             }

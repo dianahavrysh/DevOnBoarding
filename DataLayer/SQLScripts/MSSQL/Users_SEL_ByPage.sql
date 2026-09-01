@@ -87,7 +87,7 @@ BEGIN
 	DECLARE @EscapedSearchValue NVARCHAR(150) =
 		REPLACE(REPLACE(REPLACE(@SearchValue, '[', '[[]'), '%', '[%]'), '_', '[_]');
 
-	DECLARE @LikeValue NVARCHAR(154) = N'%' + @EscapedSearchValue + N'%';
+	DECLARE @LikeValue NVARCHAR(154) = CONCAT(N'%', @EscapedSearchValue, N'%');
 
 	;WITH PagedUsers AS
 	(
