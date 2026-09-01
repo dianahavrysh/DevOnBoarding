@@ -19,7 +19,16 @@ namespace Common.Interfaces
         /// <summary>
         /// Retrieve a paginated list of users asynchronously. Returns items and total rows.
         /// </summary>
-        Task<(IEnumerable<User> Items, int TotalRows)> GetByPageAsync(Guid requestingUserPK, int currentPage, int pageSize, string? sortExpression, string? searchValue, Dictionary<string, bool>? searchByFields, bool includeInactive, bool strictMatch);
+        Task<(List<User> Items, int TotalRows)> GetByPageAsync(
+            Guid requestingUserPK, 
+            int currentPage, 
+            int pageSize, 
+            string? sortExpression, 
+            string? searchValue, 
+            Dictionary<string,
+            bool>? searchByFields, 
+            bool includeInactive, 
+            bool strictMatch);
 
         /// <summary>
         /// Insert a user asynchronously and return the created primary key.

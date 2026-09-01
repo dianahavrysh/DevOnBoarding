@@ -9,7 +9,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace BusinessLogic {
+namespace DAL {
     /// <summary>
     /// Database manager for user operations.
     /// </summary>
@@ -105,7 +105,7 @@ namespace BusinessLogic {
         }
 
         /// <inheritdoc />
-        public async Task<(IEnumerable<User> Items, int TotalRows)> GetByPageAsync(
+        public async Task<(List<User> Items, int TotalRows)> GetByPageAsync(
             Guid RequestingUserPK,
             int CurrentPage,
             int PageSize,
@@ -137,7 +137,7 @@ namespace BusinessLogic {
             var totalRows = rows.FirstOrDefault()?.TotalRows ?? 0;
 
             return (
-                rows.Cast<User>(),
+                rows.Cast<User>().ToList(),
                 totalRows);
         }
 

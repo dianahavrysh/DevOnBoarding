@@ -22,7 +22,7 @@ builder.Services.AddScoped<ConnectionContext>(sp => {
 
 builder.Services.AddScoped<IDatabaseFactory, DatabaseFactory>();
 
-builder.Services.AddScoped<IUsersManager, BusinessLogic.UsersDbManager>();
+builder.Services.AddScoped<IUsersManager, DAL.UsersDbManager>();
 builder.Services.AddScoped<IUsersService, Services.UsersService>();
 
 builder.Services.AddAutoMapper(cfg => { }, typeof(Services.Mappers.UserMappingProfile).Assembly);

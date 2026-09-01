@@ -1,4 +1,4 @@
-namespace BusinessLogic
+namespace DAL
 {
     internal static class StoreProcedureNames
     {

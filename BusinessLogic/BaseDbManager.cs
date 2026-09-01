@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 
-namespace BusinessLogic {
+namespace DAL {
     /// <summary>
     /// Base class for database-backed managers.
     /// </summary>
