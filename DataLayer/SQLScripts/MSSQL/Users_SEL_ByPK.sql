@@ -12,7 +12,7 @@ BEGIN
 		u.ActiveStatus,
 		r.RoleName AS RoleName,
 		ud.FirstName,
-		ud.SecondName AS LastName,
+		ud.SecondName,
 		ud.BirthDate
 	FROM dbo.Users u
 	LEFT JOIN dbo.RoleTypes r ON u.RoleTypePK = r.RoleTypePK

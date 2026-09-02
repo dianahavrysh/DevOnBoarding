@@ -143,13 +143,14 @@ namespace DAL {
         private static User PopulateUser(IDataReader reader) {
             return new User {
                 UserPK = reader.GetValue(nameof(User.UserPK), Guid.Empty),
-                UserName = reader.GetValue(nameof(User.UserName)),
-                Email = reader.GetValue(nameof(User.Email)),
-                Password = reader.GetValue(nameof(User.Password)),
+                UserName = reader.GetValue(nameof(User.UserName), string.Empty),
+                Email = reader.GetValue(nameof(User.Email), string.Empty),
+                Password = reader.GetValue(nameof(User.Password), string.Empty),
                 ActiveStatus = reader.GetValue(nameof(User.ActiveStatus), false),
                 RoleTypePK = reader.GetValue(nameof(User.RoleTypePK), Guid.Empty),
-                FirstName = reader.GetValue(nameof(User.FirstName)),
-                SecondName = reader.GetValue(nameof(User.SecondName)),
+                RoleName = reader.GetValue(nameof(User.RoleName), string.Empty),
+                FirstName = reader.GetValue(nameof(User.FirstName), string.Empty),
+                SecondName = reader.GetValue<string?>(nameof(User.SecondName), null),
                 BirthDate = reader.GetValue<DateTime?>(nameof(User.BirthDate), null)
             };
         }

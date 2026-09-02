@@ -25,7 +25,7 @@ namespace Common.DTOs
         /// <summary>User first name.</summary>
         public string FirstName { get; set; } = string.Empty;
         /// <summary>User last name (optional).</summary>
-        public string? LastName { get; set; }
+        public string? SecondName { get; set; }
         /// <summary>User birth date (optional).</summary>
         public DateTime? BirthDate { get; set; }
     }

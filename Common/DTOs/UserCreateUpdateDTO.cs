@@ -45,7 +45,7 @@ namespace Common.DTOs {
         /// <summary>
         /// User last name (optional).
         /// </summary>
-        public string? LastName { get; set; }
+        public string? SecondName { get; set; }
 
         /// <summary>
         /// User birth date (optional).

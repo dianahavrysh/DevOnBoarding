@@ -100,7 +100,7 @@ BEGIN
 			u.RoleTypePK,
 			r.RoleName,
 			ud.FirstName,
-			ud.SecondName AS LastName,
+			ud.SecondName,
 			ud.BirthDate,
 			COUNT(*) OVER() AS TotalRows,
 
@@ -247,7 +247,7 @@ BEGIN
 		RoleTypePK,
 		RoleName,
 		FirstName,
-		LastName,
+		SecondName,
 		BirthDate,
 		TotalRows
 	FROM PagedUsers
