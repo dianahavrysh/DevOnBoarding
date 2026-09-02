@@ -5,6 +5,4 @@
 	<Nullable>enable</Nullable>
 	<GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-  <ItemGroup>
-  </ItemGroup>
 </Project>

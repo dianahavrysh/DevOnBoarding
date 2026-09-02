@@ -1,8 +1,8 @@
 using Common;
 using Common.Database;
+using Common.Extensions;
 using Common.Entities;
 using Common.Interfaces;
-using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -71,6 +71,8 @@ namespace DAL {
 
         /// <inheritdoc />
         public async Task<User?> GetByPKAsync(Guid userPK) {
+            var user = new User();
+
             var parameters = new List<IDataParameter>
             {
                 CreateParam(nameof(User.UserPK), userPK)
@@ -82,13 +84,11 @@ namespace DAL {
 
             var dbReader = (DbDataReader)reader;
 
-            if (!await dbReader.ReadAsync()) {
-                return null;
+            if (await dbReader.ReadAsync()) {
+                user = PopulateUser(dbReader);
             }
 
-            var parseUser = dbReader.GetRowParser<User>();
-
-            return parseUser(dbReader);
+            return user;
         }
 
         /// <inheritdoc />
@@ -101,6 +101,9 @@ namespace DAL {
             Dictionary<string, bool>? SearchByFields,
             bool IncludeInactive,
             bool StrictMatch) {
+            var users = new List<User>();
+            var totalRows = 0;
+
             var parameters = new List<IDataParameter>
             {
                 CreateParam(nameof(RequestingUserPK), RequestingUserPK),
@@ -119,24 +122,36 @@ namespace DAL {
                 parameters);
 
             var dbReader = (DbDataReader)reader;
-            var items = new List<User>();
-            var totalRows = 0;
 
             if (await dbReader.ReadAsync()) {
-                var parseUser = dbReader.GetRowParser<User>();
-                var totalRowsOrdinal = dbReader.GetOrdinal("TotalRows");
-
-                totalRows = dbReader.IsDBNull(totalRowsOrdinal)
-                    ? 0
-                    : dbReader.GetInt32(totalRowsOrdinal);
+                totalRows = dbReader.GetValue("TotalRows", 0);
 
                 do {
-                    items.Add(parseUser(dbReader));
+                    users.Add(PopulateUser(dbReader));
                 }
                 while (await dbReader.ReadAsync());
             }
 
-            return (items, totalRows);
+            return (users, totalRows);
+        }
+
+        /// <summary>
+        /// Populates a <see cref="User"/> from the current row of the reader
+        /// using the <see cref="DataReaderExtensions.GetValue{T}"/> helpers.
+        /// Shared by <see cref="GetByPKAsync"/> and <see cref="GetByPageAsync"/>.
+        /// </summary>
+        private static User PopulateUser(IDataReader reader) {
+            return new User {
+                UserPK = reader.GetValue(nameof(User.UserPK), Guid.Empty),
+                UserName = reader.GetValue(nameof(User.UserName)),
+                Email = reader.GetValue(nameof(User.Email)),
+                Password = reader.GetValue(nameof(User.Password)),
+                ActiveStatus = reader.GetValue(nameof(User.ActiveStatus), false),
+                RoleTypePK = reader.GetValue(nameof(User.RoleTypePK), Guid.Empty),
+                FirstName = reader.GetValue(nameof(User.FirstName)),
+                SecondName = reader.GetValue(nameof(User.SecondName)),
+                BirthDate = reader.GetValue<DateTime?>(nameof(User.BirthDate), null)
+            };
         }
 
         /// <summary>
