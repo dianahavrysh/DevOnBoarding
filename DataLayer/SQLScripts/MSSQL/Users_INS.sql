@@ -15,7 +15,7 @@ BEGIN
     BEGIN TRANSACTION;
 
     BEGIN TRY
-        SET @NewUserPK = NEWSEQUENTIALID();
+        SET @NewUserPK = NEWID();
 
         INSERT INTO dbo.Users
         (
