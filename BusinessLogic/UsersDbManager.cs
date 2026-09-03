@@ -1,13 +1,14 @@
-using Common;
-using Common.Database;
-using Common.Extensions;
-using Common.Entities;
-using Common.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
+using Common;
+using Common.Database;
+using Common.Entities;
+using Common.Extensions;
+using Common.Interfaces;
 
 namespace DAL {
     /// <summary>
@@ -119,14 +120,15 @@ namespace DAL {
                 StoreProcedureNames.UsersSelectByPage,
                 parameters);
 
-            if (await reader.ReadAsync()) {
-                totalRows = reader.GetValue("TotalRows", 0);
+            var totalRowsSet = false;
+
+            while (await reader.ReadAsync()) {
+                if (!totalRowsSet) {
+                    totalRows = reader.GetValue("TotalRows", 0);
+                    totalRowsSet = true;
+                }
 
                 users.Add(PopulateUser(reader));
-
-                while (await reader.ReadAsync()) {
-                    users.Add(PopulateUser(reader));
-                }
             }
 
             return (users, totalRows);
