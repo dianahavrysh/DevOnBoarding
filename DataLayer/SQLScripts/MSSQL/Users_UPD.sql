@@ -6,8 +6,8 @@ CREATE PROCEDURE dbo.Users_UPD
 	@ActiveStatus BIT,
 	@RoleTypePK UNIQUEIDENTIFIER,
 	@FirstName NVARCHAR(50),
-	@SecondName NVARCHAR(50) = NULL,
-	@BirthDate DATETIME2(7) = NULL
+	@SecondName NVARCHAR(50),
+	@BirthDate DATETIME2(7)
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -22,20 +22,12 @@ BEGIN
 			RoleTypePK = @RoleTypePK
 		WHERE UserPK = @UserPK;
 
-		IF EXISTS (SELECT 1 FROM dbo.UserData WHERE UserPK = @UserPK)
-		BEGIN
-			UPDATE dbo.UserData
-			SET
-				FirstName = @FirstName,
-				SecondName = @SecondName,
-				BirthDate = @BirthDate
-			WHERE UserPK = @UserPK;
-		END
-		ELSE
-		BEGIN
-			INSERT INTO dbo.UserData (UserPK, FirstName, SecondName, BirthDate)
-			VALUES (@UserPK, @FirstName, @SecondName, @BirthDate);
-		END
+		UPDATE dbo.UserData
+		SET
+			FirstName = @FirstName,
+			SecondName = @SecondName,
+			BirthDate = @BirthDate
+		WHERE UserPK = @UserPK;
 
 		COMMIT TRANSACTION;
 	END TRY
