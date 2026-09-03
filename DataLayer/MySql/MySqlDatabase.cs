@@ -3,6 +3,7 @@ using System;
 using System.Data;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
+using System.Data.Common;
 
 namespace DataLayer.MySql {
     /// <summary>
@@ -54,7 +55,7 @@ namespace DataLayer.MySql {
         }
 
         /// <inheritdoc/>
-        protected override async Task<IDataReader> ExecuteReaderCoreAsync(
+        protected override async Task<DbDataReader> ExecuteReaderCoreAsync(
             IDbCommand command) {
             return await ((MySqlCommand)command)
                 .ExecuteReaderAsync(CommandBehavior.CloseConnection);

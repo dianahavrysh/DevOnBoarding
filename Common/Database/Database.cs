@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Threading.Tasks;
 
 namespace Common.Database {
@@ -61,7 +62,7 @@ namespace Common.Database {
         /// Executes a command and returns a data reader.
         /// The connection is closed when the reader is disposed.
         /// </summary>
-        public virtual async Task<IDataReader> ExecuteReaderAsync(
+        public virtual async Task<DbDataReader> ExecuteReaderAsync(
             string commandText,
             CommandType commandType = CommandType.StoredProcedure,
             IEnumerable<IDataParameter>? parameters = null) {
@@ -178,7 +179,7 @@ namespace Common.Database {
         /// <summary>
         /// Executes the command and returns a data reader asynchronously.
         /// </summary>
-        protected abstract Task<IDataReader> ExecuteReaderCoreAsync(
+        protected abstract Task<DbDataReader> ExecuteReaderCoreAsync(
             IDbCommand command);
 
         /// <summary>

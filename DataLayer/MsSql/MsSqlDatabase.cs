@@ -3,6 +3,7 @@ using System;
 using System.Data;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
+using System.Data.Common;
 
 namespace DataLayer.MsSql {
     /// <summary>
@@ -54,7 +55,7 @@ namespace DataLayer.MsSql {
         }
 
         /// <inheritdoc/>
-        protected override async Task<IDataReader> ExecuteReaderCoreAsync(
+        protected override async Task<DbDataReader> ExecuteReaderCoreAsync(
             IDbCommand command) {
             return await ((SqlCommand)command)
                 .ExecuteReaderAsync(CommandBehavior.CloseConnection);

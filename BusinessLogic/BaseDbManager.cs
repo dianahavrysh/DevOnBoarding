@@ -1,10 +1,11 @@
-using Common;
-using Common.Database;
-using Common.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Threading.Tasks;
+using Common;
+using Common.Database;
+using Common.Interfaces;
 
 namespace DAL {
     /// <summary>
@@ -39,7 +40,7 @@ namespace DAL {
                 parameters: parameters);
         }
 
-        protected Task<IDataReader> ExecuteReaderAsync(
+        protected Task<DbDataReader> ExecuteReaderAsync(
             string commandText,
             IEnumerable<IDataParameter>? parameters = null) {
             return _db.ExecuteReaderAsync(

@@ -82,10 +82,8 @@ namespace DAL {
                 StoreProcedureNames.UsersSelectByPK,
                 parameters);
 
-            var dbReader = (DbDataReader)reader;
-
-            if (await dbReader.ReadAsync()) {
-                user = PopulateUser(dbReader);
+            if (await reader.ReadAsync()) {
+                user = PopulateUser(reader);
             }
 
             return user;
@@ -121,15 +119,14 @@ namespace DAL {
                 StoreProcedureNames.UsersSelectByPage,
                 parameters);
 
-            var dbReader = (DbDataReader)reader;
+            if (await reader.ReadAsync()) {
+                totalRows = reader.GetValue("TotalRows", 0);
 
-            if (await dbReader.ReadAsync()) {
-                totalRows = dbReader.GetValue("TotalRows", 0);
+                users.Add(PopulateUser(reader));
 
-                do {
-                    users.Add(PopulateUser(dbReader));
+                while (await reader.ReadAsync()) {
+                    users.Add(PopulateUser(reader));
                 }
-                while (await dbReader.ReadAsync());
             }
 
             return (users, totalRows);
@@ -140,7 +137,7 @@ namespace DAL {
         /// using the <see cref="DataReaderExtensions.GetValue{T}"/> helpers.
         /// Shared by <see cref="GetByPKAsync"/> and <see cref="GetByPageAsync"/>.
         /// </summary>
-        private static User PopulateUser(IDataReader reader) {
+        private static User PopulateUser(DbDataReader reader) {
             return new User {
                 UserPK = reader.GetValue(nameof(User.UserPK), Guid.Empty),
                 UserName = reader.GetValue(nameof(User.UserName), string.Empty),
