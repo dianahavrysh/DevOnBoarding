@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 
 namespace Common.Interfaces;
@@ -6,17 +6,16 @@ namespace Common.Interfaces;
 /// <summary>
 /// Service interface for JWT token operations.
 /// Responsible for creating and validating JWT tokens.
+/// Does NOT decide which application-specific claims should exist.
 /// </summary>
 public interface IJwtTokenService
 {
     /// <summary>
-    /// Generates a new JWT token for the specified user.
+    /// Generates a new JWT token with the provided claims.
     /// </summary>
-    /// <param name="userId">The user's primary key.</param>
-    /// <param name="username">The user's username.</param>
-    /// <param name="roleName">The user's role name.</param>
+    /// <param name="claims">The claims to include in the token.</param>
     /// <returns>A JWT token string.</returns>
-    string GenerateToken(Guid userId, string username, string roleName);
+    string GenerateToken(IEnumerable<Claim> claims);
 
     /// <summary>
     /// Validates a JWT token and returns the claims principal if valid.

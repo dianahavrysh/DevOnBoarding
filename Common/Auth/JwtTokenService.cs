@@ -12,6 +12,7 @@ namespace Common.Auth;
 /// <summary>
 /// Implementation of JWT token generation and validation.
 /// This class encapsulates all cryptographic operations related to JWT tokens.
+/// Application-specific claims are created by the caller (AuthService).
 /// </summary>
 internal class JwtTokenService : IJwtTokenService
 {
@@ -23,19 +24,14 @@ internal class JwtTokenService : IJwtTokenService
     }
 
     /// <summary>
-    /// Generates a JWT token for the specified user.
+    /// Generates a JWT token with the provided claims.
     /// </summary>
-    public string GenerateToken(Guid userId, string username, string roleName)
+    /// <param name="claims">The claims to include in the token.</param>
+    /// <returns>A JWT token string.</returns>
+    public string GenerateToken(IEnumerable<Claim> claims)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-            new Claim(ClaimTypes.Name, username),
-            new Claim(ClaimTypes.Role, roleName)
-        };
 
         var token = new JwtSecurityToken(
             issuer: _options.Issuer,
@@ -51,6 +47,8 @@ internal class JwtTokenService : IJwtTokenService
     /// <summary>
     /// Validates a JWT token and returns the claims principal if valid.
     /// </summary>
+    /// <param name="token">The JWT token string to validate.</param>
+    /// <returns>A ClaimsPrincipal if the token is valid; null otherwise.</returns>
     public ClaimsPrincipal? ValidateToken(string token)
     {
         try
@@ -68,7 +66,7 @@ internal class JwtTokenService : IJwtTokenService
                 ValidAudience = _options.Audience,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero
-            }, out SecurityToken validatedToken);
+            }, out _);
 
             return principal;
         }

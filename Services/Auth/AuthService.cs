@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Common.DTOs;
 using Common.Entities;
@@ -17,15 +18,18 @@ internal class AuthService : IAuthService
 {
     private readonly IUsersManager _usersManager;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IPasswordHasher _passwordHasher;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IUsersManager usersManager,
         IJwtTokenService jwtTokenService,
+        IPasswordHasher passwordHasher,
         ILogger<AuthService> logger)
     {
         _usersManager = usersManager;
         _jwtTokenService = jwtTokenService;
+        _passwordHasher = passwordHasher;
         _logger = logger;
     }
 
@@ -40,87 +44,42 @@ internal class AuthService : IAuthService
             return null;
         }
 
-        try
+        // Retrieve user from database by username
+        var user = await _usersManager.GetByUserNameAsync(username);
+
+        if (user == null)
         {
-            // Retrieve user from database by username
-            // Note: In a real application, there should be a GetByUsernameAsync method
-            // For now, we retrieve all users and filter (in production, use GetByUsernameAsync)
-            var user = await GetUserByUsernameAsync(username);
-
-            if (user == null)
-            {
-                _logger.LogWarning("Authentication failed: User not found for username '{Username}'.", username);
-                return null;
-            }
-
-            // Verify password (assuming password in database is hashed)
-            // In production, use BCrypt.Net-Next or similar for verification
-            if (!VerifyPassword(password, user.Password))
-            {
-                _logger.LogWarning("Authentication failed: Invalid password for username '{Username}'.", username);
-                return null;
-            }
-
-            // Check if user is active
-            if (!user.ActiveStatus)
-            {
-                _logger.LogWarning("Authentication failed: User '{Username}' is inactive.", username);
-                return null;
-            }
-
-            // Generate JWT token with user information
-            var token = _jwtTokenService.GenerateToken(user.UserPK, user.UserName, user.RoleName);
-
-            _logger.LogInformation("User '{Username}' authenticated successfully.", username);
-            return token;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during authentication for username '{Username}'.", username);
+            _logger.LogWarning("Authentication failed: User not found for username '{Username}'.", username);
             return null;
         }
-    }
 
-    /// <summary>
-    /// Retrieves a user from the database by username.
-    /// This is a temporary implementation until a GetByUsernameAsync method is added to IUsersManager.
-    /// </summary>
-    private async Task<User?> GetUserByUsernameAsync(string username)
-    {
-        // Get all users (pagination) - this is a workaround
-        // In production, add a GetByUsernameAsync(string username) method to IUsersManager
-        var requestingUserPK = Guid.Empty; // System user for internal queries
-        var (users, _) = await _usersManager.GetByPageAsync(
-            requestingUserPK,
-            currentPage: 1,
-            pageSize: 1000,
-            sortExpression: null,
-            searchValue: username,
-            searchByFields: new Dictionary<string, bool> { { "UserName", true } },
-            includeInactive: true,
-            strictMatch: true);
-
-        foreach (var user in users)
+        // Verify password using IPasswordHasher
+        if (!_passwordHasher.Verify(password, user.Password))
         {
-            if (user.UserName.Equals(username, StringComparison.OrdinalIgnoreCase))
-            {
-                return user;
-            }
+            _logger.LogWarning("Authentication failed: Invalid password for username '{Username}'.", username);
+            return null;
         }
 
-        return null;
+        // Check if user is active
+        if (!user.ActiveStatus)
+        {
+            _logger.LogWarning("Authentication failed: User '{Username}' is inactive.", username);
+            return null;
+        }
+
+        // Create application-specific claims
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.UserPK.ToString()),
+            new Claim(ClaimTypes.Name, user.UserName),
+            new Claim(ClaimTypes.Role, user.RoleName)
+        };
+
+        // Generate JWT token with claims
+        var token = _jwtTokenService.GenerateToken(claims);
+
+        _logger.LogInformation("User '{Username}' authenticated successfully.", username);
+        return token;
     }
 
-    /// <summary>
-    /// Verifies the provided password against the stored hashed password.
-    /// In production, use BCrypt.Net-Next or similar for proper password verification.
-    /// </summary>
-    private bool VerifyPassword(string providedPassword, string storedHashedPassword)
-    {
-        // Placeholder: In production, use BCrypt.VerifyHashedPassword or similar
-        // For now, do a simple comparison (NOT SECURE - for development only)
-        // Example: return BCrypt.Net.BCrypt.Verify(providedPassword, storedHashedPassword);
-
-        return storedHashedPassword == providedPassword;
     }
-}

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Common.Interfaces
-
 {
     /// <summary>
     /// Manager interface for user operations.
@@ -17,6 +16,14 @@ namespace Common.Interfaces
         Task<User?> GetByPKAsync(Guid userPK);
 
         /// <summary>
+        /// Get a user entity by username asynchronously.
+        /// Uses a dedicated stored procedure for efficient lookup.
+        /// </summary>
+        /// <param name="userName">The username to search for.</param>
+        /// <returns>The user if found; otherwise null.</returns>
+        Task<User?> GetByUserNameAsync(string userName);
+
+        /// <summary>
         /// Retrieve a paginated list of users asynchronously. Returns items and total rows.
         /// </summary>
         Task<(List<User> Items, int TotalRows)> GetByPageAsync(
@@ -25,8 +32,7 @@ namespace Common.Interfaces
             int pageSize, 
             string? sortExpression, 
             string? searchValue, 
-            Dictionary<string,
-            bool>? searchByFields, 
+            Dictionary<string, bool>? searchByFields, 
             bool includeInactive, 
             bool strictMatch);
 

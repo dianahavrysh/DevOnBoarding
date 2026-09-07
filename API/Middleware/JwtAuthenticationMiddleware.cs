@@ -13,24 +13,29 @@ namespace API.Middleware;
 /// - Setting HttpContext.User if valid
 /// Does NOT contain business logic or token validation implementation details.
 /// </summary>
-public class JwtAuthenticationMiddleware {
+public class JwtAuthenticationMiddleware
+{
     private readonly RequestDelegate _next;
 
-    public JwtAuthenticationMiddleware(RequestDelegate next) {
+    public JwtAuthenticationMiddleware(RequestDelegate next)
+    {
         _next = next;
     }
 
     /// <summary>
     /// Processes the HTTP request to extract and validate JWT token.
     /// </summary>
-    public async Task InvokeAsync(HttpContext context, IJwtTokenService jwtTokenService) {
-        string authHeader = context.Request.Headers.Authorization;
+    public async Task InvokeAsync(HttpContext context, IJwtTokenService jwtTokenService)
+    {
+        string? authHeader = context.Request.Headers.Authorization;
 
-        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)) {
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
             var token = authHeader["Bearer ".Length..];
             var principal = jwtTokenService.ValidateToken(token);
 
-            if (principal != null) {
+            if (principal != null)
+            {
                 context.User = principal;
             }
         }
@@ -38,3 +43,4 @@ public class JwtAuthenticationMiddleware {
         await _next(context);
     }
 }
+
