@@ -7,13 +7,13 @@ using Microsoft.Extensions.Options;
 namespace Common.Auth;
 
 /// <summary>
-/// Extension methods for registering JWT and password hashing services in the DI container.
+/// Extension methods for registering JWT services in the DI container.
 /// These extensions allow the API layer to register Common layer services without knowing implementation details.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds JWT token service and password hasher to the service collection.
+    /// Adds JWT token service to the service collection.
     /// This method must be called from Program.cs to register Common layer authentication services.
     /// </summary>
     /// <param name="services">The service collection to register services with.</param>
@@ -28,9 +28,6 @@ public static class ServiceCollectionExtensions
 
         // Register internal JwtTokenService - clients see only IJwtTokenService interface
         services.AddScoped<IJwtTokenService, JwtTokenService>();
-
-        // Register password hasher implementation
-        services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 
         // Validate JWT options on startup
         services.AddSingleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>();

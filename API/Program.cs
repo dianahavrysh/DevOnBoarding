@@ -12,14 +12,19 @@ using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure JWT options from appsettings
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+// Configure JWT options from appsettings with startup validation
+builder.Services.AddOptions<JwtOptions>()
+    .Bind(builder.Configuration.GetSection("Jwt"))
+    .ValidateOnStart();
 
-// Add JWT token service and password hasher (from Common layer)
+// Add JWT token service (from Common layer)
 builder.Services.AddJwtTokenService();
 
 // Add authentication services (from Services layer)
 builder.Services.AddAuthServices();
+
+builder.Services.AddScoped<ConnectionContext>(sp =>
+{
     var configuration = sp.GetRequiredService<IConfiguration>();
     var dbTypeString = configuration.GetValue<string>("DbType") ?? "MSSQL";
     var dbType = Enum.TryParse<DbType>(dbTypeString, true, out var parsed) ? parsed : DbType.MSSQL;

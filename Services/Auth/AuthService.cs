@@ -18,18 +18,15 @@ internal class AuthService : IAuthService
 {
     private readonly IUsersManager _usersManager;
     private readonly IJwtTokenService _jwtTokenService;
-    private readonly IPasswordHasher _passwordHasher;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IUsersManager usersManager,
         IJwtTokenService jwtTokenService,
-        IPasswordHasher passwordHasher,
         ILogger<AuthService> logger)
     {
         _usersManager = usersManager;
         _jwtTokenService = jwtTokenService;
-        _passwordHasher = passwordHasher;
         _logger = logger;
     }
 
@@ -53,8 +50,8 @@ internal class AuthService : IAuthService
             return null;
         }
 
-        // Verify password using IPasswordHasher
-        if (!_passwordHasher.Verify(password, user.Password))
+        // Verify password (plaintext comparison)
+        if (user.Password != password)
         {
             _logger.LogWarning("Authentication failed: Invalid password for username '{Username}'.", username);
             return null;
@@ -81,5 +78,4 @@ internal class AuthService : IAuthService
         _logger.LogInformation("User '{Username}' authenticated successfully.", username);
         return token;
     }
-
-    }
+}
