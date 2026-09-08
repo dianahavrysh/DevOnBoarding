@@ -91,6 +91,26 @@ namespace DAL {
         }
 
         /// <inheritdoc />
+        public async Task<User?> GetByEmailAsync(string email) {
+            var user = new User();
+
+            var parameters = new List<IDataParameter>
+            {
+                CreateParam(nameof(User.Email), email)
+            };
+
+            using var reader = await ExecuteReaderAsync(
+                StoreProcedureNames.UsersSelectByEmail,
+                parameters);
+
+            if (await reader.ReadAsync()) {
+                user = PopulateUser(reader);
+            }
+
+            return user;
+        }
+
+        /// <inheritdoc />
         public async Task<(List<User> Items, int TotalRows)> GetByPageAsync(
             Guid RequestingUserPK,
             int CurrentPage,

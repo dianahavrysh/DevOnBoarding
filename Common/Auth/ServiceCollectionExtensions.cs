@@ -1,5 +1,4 @@
 using System;
-using Common.Auth;
 using Common.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;

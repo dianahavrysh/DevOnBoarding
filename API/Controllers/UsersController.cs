@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
+using API.Filters;
 
 namespace API.Controllers {
     /// <summary>
@@ -27,6 +28,7 @@ namespace API.Controllers {
         /// </summary>
         /// <param name="id">User primary key.</param>
         /// <returns>200 with user DTO or 404 if not found.</returns>
+        [RequireAuth]
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(UserDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -43,6 +45,7 @@ namespace API.Controllers {
         /// </summary>
         // TODO: requestingUserPK should come from the authenticated user's claims
         // once the login/session subsystem exists, not from the query string.
+        [RequireAuth]
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByPage(
@@ -71,6 +74,7 @@ namespace API.Controllers {
         /// </summary>
         /// <param name="dto">Write DTO containing user data.</param>
         /// <returns>201 Created with the created user.</returns>
+        [RequireAuth]
         [HttpPost]
         [ProducesResponseType(typeof(UserDTO), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -90,6 +94,7 @@ namespace API.Controllers {
         /// DTO containing the primary key of the user to update and the new values.
         /// </param>
         /// <returns>204 if updated or 404 if the user does not exist.</returns>
+        [RequireAuth]
         [HttpPut]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -105,6 +110,7 @@ namespace API.Controllers {
         /// Delete the user identified by the specified primary key.
         /// </summary>
         /// <param name="id">User primary key.</param>
+        [RequireAuth]
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Delete(Guid id) {

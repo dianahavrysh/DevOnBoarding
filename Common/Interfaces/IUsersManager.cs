@@ -16,12 +16,12 @@ namespace Common.Interfaces
         Task<User?> GetByPKAsync(Guid userPK);
 
         /// <summary>
-        /// Get a user entity by username asynchronously.
+        /// Get a user entity by email asynchronously.
         /// Uses a dedicated stored procedure for efficient lookup.
         /// </summary>
-        /// <param name="userName">The username to search for.</param>
+        /// <param name="email">The email to search for.</param>
         /// <returns>The user if found; otherwise null.</returns>
-        Task<User?> GetByUserNameAsync(string userName);
+        Task<User?> GetByEmailAsync(string email);
 
         /// <summary>
         /// Retrieve a paginated list of users asynchronously. Returns items and total rows.

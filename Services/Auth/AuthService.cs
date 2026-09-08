@@ -31,7 +31,7 @@ internal class AuthService : IAuthService
     }
 
     /// <summary>
-    /// Authenticates a user by username and password, and returns a JWT token if successful.
+    /// Authenticates a user by email and password, and returns a JWT token if successful.
     /// </summary>
     public async Task<string?> AuthenticateAsync(string username, string password)
     {
@@ -41,8 +41,8 @@ internal class AuthService : IAuthService
             return null;
         }
 
-        // Retrieve user from database by username
-        var user = await _usersManager.GetByUserNameAsync(username);
+        // Retrieve user from database by email
+        var user = await _usersManager.GetByEmailAsync(username);
 
         if (user == null)
         {

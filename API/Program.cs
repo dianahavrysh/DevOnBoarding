@@ -12,15 +12,12 @@ using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure JWT options from appsettings with startup validation
 builder.Services.AddOptions<JwtOptions>()
     .Bind(builder.Configuration.GetSection("Jwt"))
     .ValidateOnStart();
 
-// Add JWT token service (from Common layer)
 builder.Services.AddJwtTokenService();
 
-// Add authentication services (from Services layer)
 builder.Services.AddAuthServices();
 
 builder.Services.AddScoped<ConnectionContext>(sp =>
@@ -56,7 +53,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 
-// Register middleware for JWT authentication (extracts and validates tokens)
 app.UseMiddleware<API.Middleware.JwtAuthenticationMiddleware>();
 
 app.MapControllers();
