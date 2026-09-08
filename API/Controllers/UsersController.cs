@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 using API.Filters;
+using System.Collections.Generic;
+using Common.Entities;
 
 namespace API.Controllers {
     /// <summary>
@@ -14,13 +16,16 @@ namespace API.Controllers {
     [Route("api/[controller]")]
     public class UsersController : ControllerBase {
         private readonly IUsersService _service;
+        private readonly ITokenClaimsService _tokenClaimsService;
 
         /// <summary>
         /// Creates a new <see cref="UsersController"/>.
         /// </summary>
         /// <param name="service">Service providing user operations.</param>
-        public UsersController(IUsersService service) {
+        /// <param name="tokenClaimsService">Service for extracting claims from the authenticated user.</param>
+        public UsersController(IUsersService service, ITokenClaimsService tokenClaimsService) {
             _service = service;
+            _tokenClaimsService = tokenClaimsService;
         }
 
         /// <summary>
@@ -43,30 +48,41 @@ namespace API.Controllers {
         /// <summary>
         /// Get a paginated list of users.
         /// </summary>
-        // TODO: requestingUserPK should come from the authenticated user's claims
-        // once the login/session subsystem exists, not from the query string.
         [RequireAuth]
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByPage(
-            [FromQuery] Guid requestingUserPK,
-            [FromQuery] int currentPage = 1,
-            [FromQuery] int pageSize = 20) {
+        int currentPage,
+        int pageSize,
+        string? sortExpression,
+        string? searchValue,
+        bool searchByUserName,
+        bool searchByEmail,
+        bool searchByFirstName,
+        bool searchBySecondName,
+        bool includeInactive,
+        bool strictMatch) {
+            var requestingUserPK = _tokenClaimsService.GetUserIdFromPrincipal(User);
 
-            var (items, total) = await _service.GetByPageAsync(
+            var searchByFields = new Dictionary<string, bool>
+            {
+                { nameof(Common.Entities.User.UserName), searchByUserName },
+                { nameof(Common.Entities.User.Email), searchByEmail },
+                { nameof(Common.Entities.User.FirstName), searchByFirstName },
+                { nameof(Common.Entities.User.SecondName), searchBySecondName }
+            };
+
+            var (items, totalRows) = await _service.GetByPageAsync(
                 requestingUserPK,
                 currentPage,
                 pageSize,
-                null,
-                null,
-                null,
-                false,
-                false);
+                sortExpression,
+                searchValue,
+                searchByFields,
+                includeInactive,
+                strictMatch);
 
-            return Ok(new {
-                TotalRows = total,
-                Items = items
-            });
+            return Ok(new { items, totalRows });
         }
 
         /// <summary>
