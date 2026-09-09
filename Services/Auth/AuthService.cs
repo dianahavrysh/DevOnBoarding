@@ -33,38 +33,40 @@ internal class AuthService : IAuthService
     /// <summary>
     /// Authenticates a user by email and password, and returns a JWT token if successful.
     /// </summary>
-    public async Task<string?> AuthenticateAsync(string username, string password)
+    public async Task<string?> AuthenticateAsync(string email, string password)
     {
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
             _logger.LogWarning("Authentication attempt with empty username or password.");
             return null;
         }
 
-        // Retrieve user from database by email
-        var user = await _usersManager.GetByEmailAsync(username);
+        var user = await _usersManager.GetByEmailAsync(email);
 
         if (user == null)
         {
-            _logger.LogWarning("Authentication failed: User not found for username '{Username}'.", username);
+            _logger.LogWarning("Authentication failed: User not found for username '{Username}'.", email);
             return null;
         }
 
-        // Verify password (plaintext comparison)
         if (user.Password != password)
         {
-            _logger.LogWarning("Authentication failed: Invalid password for username '{Username}'.", username);
+            _logger.LogWarning("Authentication failed: Invalid password for username '{Username}'.", email);
             return null;
         }
 
-        // Check if user is active
         if (!user.ActiveStatus)
         {
-            _logger.LogWarning("Authentication failed: User '{Username}' is inactive.", username);
+            _logger.LogWarning("Authentication failed: User '{Username}' is inactive.", email);
             return null;
         }
 
-        // Create application-specific claims
+        if (string.IsNullOrWhiteSpace(user.RoleName))
+        {
+            _logger.LogError("Authentication failed: User '{Username}' has no role assigned.", email);
+            return null;
+        }
+
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.UserPK.ToString()),
@@ -72,10 +74,9 @@ internal class AuthService : IAuthService
             new Claim(ClaimTypes.Role, user.RoleName)
         };
 
-        // Generate JWT token with claims
         var token = _jwtTokenService.GenerateToken(claims);
 
-        _logger.LogInformation("User '{Username}' authenticated successfully.", username);
+        _logger.LogInformation("User '{Username}' authenticated successfully.", email);
         return token;
     }
 }

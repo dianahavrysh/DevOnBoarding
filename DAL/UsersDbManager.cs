@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using Common;
 using Common.Database;
@@ -10,7 +9,7 @@ using Common.Entities;
 using Common.Extensions;
 using Common.Interfaces;
 
-namespace DAL {
+namespace DAL;
     /// <summary>
     /// Database manager for user operations.
     /// </summary>
@@ -217,4 +216,3 @@ namespace DAL {
                 searchByFields.GetValueOrDefault("SecondName")));
         }
     }
-}

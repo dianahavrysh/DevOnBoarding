@@ -25,32 +25,26 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Authenticates a user and returns a JWT token.
     /// </summary>
-    /// <param name="loginDto">Login credentials (username and password).</param>
+    /// <param name="loginDto">Login credentials (email and password).</param>
     /// <returns>A JWT token if authentication succeeds; otherwise 401 Unauthorized.</returns>
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
-        if (loginDto == null)
+        if (!ModelState.IsValid)
         {
-            return BadRequest(new { error = "Login credentials are required." });
+            return BadRequest(ModelState);
         }
 
-        if (string.IsNullOrWhiteSpace(loginDto.Username) || string.IsNullOrWhiteSpace(loginDto.Password))
-        {
-            return BadRequest(new { error = "Username and password are required." });
-        }
-
-        var token = await _authService.AuthenticateAsync(loginDto.Username, loginDto.Password);
+        var token = await _authService.AuthenticateAsync(loginDto.Email, loginDto.Password);
 
         if (token == null)
         {
-            return Unauthorized(new { error = "Invalid username or password." });
+            return Unauthorized(new { error = "Invalid email or password." });
         }
 
         return Ok(new LoginResponseDto { Token = token });
     }
 }
-
-
