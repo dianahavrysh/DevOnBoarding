@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using Common;
 using Common.Database;
@@ -10,7 +9,7 @@ using Common.Entities;
 using Common.Extensions;
 using Common.Interfaces;
 
-namespace DAL {
+namespace DAL;
     /// <summary>
     /// Database manager for user operations.
     /// </summary>
@@ -91,13 +90,36 @@ namespace DAL {
         }
 
         /// <inheritdoc />
+        public async Task<User?> GetByEmailAsync(string email) {
+            var user = new User();
+
+            var parameters = new List<IDataParameter>
+            {
+                CreateParam(nameof(User.Email), email)
+            };
+
+            using var reader = await ExecuteReaderAsync(
+                StoreProcedureNames.UsersSelectByEmail,
+                parameters);
+
+            if (await reader.ReadAsync()) {
+                user = PopulateUser(reader);
+            }
+
+            return user;
+        }
+
+        /// <inheritdoc />
         public async Task<(List<User> Items, int TotalRows)> GetByPageAsync(
             Guid RequestingUserPK,
             int CurrentPage,
             int PageSize,
             string? SortExpression,
             string? SearchValue,
-            Dictionary<string, bool>? SearchByFields,
+            bool SearchByUserName,
+            bool SearchByEmail,
+            bool SearchByFirstName,
+            bool SearchBySecondName,
             bool IncludeInactive,
             bool StrictMatch) {
             var users = new List<User>();
@@ -110,6 +132,10 @@ namespace DAL {
                 CreateParam(nameof(PageSize), PageSize),
                 CreateParam(nameof(SortExpression), SortExpression),
                 CreateParam(nameof(SearchValue), SearchValue),
+                CreateParam(nameof(SearchByUserName), SearchByUserName),
+                CreateParam(nameof(SearchByEmail), SearchByEmail),
+                CreateParam(nameof(SearchByFirstName), SearchByFirstName),
+                CreateParam(nameof(SearchBySecondName), SearchBySecondName),
                 CreateParam(nameof(IncludeInactive), IncludeInactive),
                 CreateParam(nameof(StrictMatch), StrictMatch)
             };
@@ -197,4 +223,3 @@ namespace DAL {
                 searchByFields.GetValueOrDefault("SecondName")));
         }
     }
-}
