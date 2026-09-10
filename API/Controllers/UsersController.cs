@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Common.Entities;
+using Common.Constants;
 
 namespace API.Controllers;
 
@@ -16,9 +17,12 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class UsersController : ControllerBase
-{
-    private const int MaxPageSize = 100;
+public class UsersController : ControllerBase {
+
+    if (pageSize <= 0 || pageSize > PaginationDefaults.MaxPageSize)
+    {
+        return BadRequest(new { error = $"Page size must be between 1 and {PaginationDefaults.MaxPageSize}." });
+    }
 
     private readonly IUsersService _service;
     private readonly ITokenClaimsService _tokenClaimsService;

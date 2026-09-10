@@ -40,11 +40,8 @@ public class AuthController : ControllerBase
 
         var token = await _authService.AuthenticateAsync(loginDto.Email, loginDto.Password);
 
-        if (token == null)
-        {
-            return Unauthorized(new { error = "Invalid email or password." });
-        }
-
-        return Ok(new LoginResponseDto { Token = token });
+        return token is not null
+            ? Ok(new LoginResponseDto { Token = token })
+            : Unauthorized(new { error = "Invalid email or password." });
     }
 }

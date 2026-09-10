@@ -15,10 +15,10 @@ BEGIN
         ud.FirstName,
         ud.SecondName,
         ud.BirthDate
-    FROM Users u
-    INNER JOIN RoleTypes r
+    FROM Users AS u
+    JOIN RoleTypes AS r
         ON u.RoleTypePK = r.RoleTypePK
-    INNER JOIN UserData ud
+    JOIN UserData AS ud
         ON u.UserPK = ud.UserPK
     WHERE u.Email = @Email;
 END

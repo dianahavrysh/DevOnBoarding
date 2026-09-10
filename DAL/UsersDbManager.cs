@@ -116,7 +116,10 @@ namespace DAL;
             int PageSize,
             string? SortExpression,
             string? SearchValue,
-            Dictionary<string, bool>? SearchByFields,
+            bool SearchByUserName,
+            bool SearchByEmail,
+            bool SearchByFirstName,
+            bool SearchBySecondName,
             bool IncludeInactive,
             bool StrictMatch) {
             var users = new List<User>();
@@ -129,6 +132,10 @@ namespace DAL;
                 CreateParam(nameof(PageSize), PageSize),
                 CreateParam(nameof(SortExpression), SortExpression),
                 CreateParam(nameof(SearchValue), SearchValue),
+                CreateParam(nameof(SearchByUserName), SearchByUserName),
+                CreateParam(nameof(SearchByEmail), SearchByEmail),
+                CreateParam(nameof(SearchByFirstName), SearchByFirstName),
+                CreateParam(nameof(SearchBySecondName), SearchBySecondName),
                 CreateParam(nameof(IncludeInactive), IncludeInactive),
                 CreateParam(nameof(StrictMatch), StrictMatch)
             };
