@@ -26,18 +26,19 @@ namespace Common.Interfaces
         /// <summary>
         /// Retrieve a paginated list of users asynchronously. Returns items and total rows.
         /// </summary>
+        /// <param name="requestingUserRole">The role of the requesting user for row-level filtering.</param>
         Task<(List<User> Items, int TotalRows)> GetByPageAsync(
-            Guid RequestingUserPK,
-            int CurrentPage,
-            int PageSize,
-            string? SortExpression,
-            string? SearchValue,
-            bool SearchByUserName,
-            bool SearchByEmail,
-            bool SearchByFirstName,
-            bool SearchBySecondName,
-            bool IncludeInactive,
-            bool StrictMatch);
+            string requestingUserRole,
+            int currentPage,
+            int pageSize,
+            string? sortExpression,
+            string? searchValue,
+            bool searchByUserName,
+            bool searchByEmail,
+            bool searchByFirstName,
+            bool searchBySecondName,
+            bool includeInactive,
+            bool strictMatch);
 
         /// <summary>
         /// Insert a user asynchronously and return the created primary key.

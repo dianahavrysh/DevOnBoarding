@@ -1,5 +1,5 @@
-CREATE PROCEDURE dbo.Users_SEL_ByPage
-	@RequestingUserPK UNIQUEIDENTIFIER,
+ALTER PROCEDURE dbo.Users_SEL_ByPage
+	@RequestingUserRole NVARCHAR(50),
 	@CurrentPage INT,
 	@PageSize INT,
 	@SortExpression NVARCHAR(100),
@@ -20,28 +20,19 @@ BEGIN
 	IF @PageSize IS NULL OR @PageSize < 1
 		SET @PageSize = 20;
 
-	DECLARE @StartRow INT = (@CurrentPage - 1) * @PageSize + 1;
-	DECLARE @EndRow INT = @StartRow + @PageSize - 1;
-
-	DECLARE @RequestingRoleName VARCHAR(50);
-
-	SELECT @RequestingRoleName = r.RoleName
-	FROM dbo.Users u WITH (NOLOCK)
-	JOIN dbo.RoleTypes r WITH (NOLOCK)
-		ON r.RoleTypePK = u.RoleTypePK
-	WHERE u.UserPK = @RequestingUserPK;
-
-	IF @RequestingRoleName IS NULL
+	IF @RequestingUserRole IS NULL OR LEN(LTRIM(RTRIM(@RequestingUserRole))) = 0
 	BEGIN
-		RAISERROR('Requesting user not found.', 16, 1);
+		RAISERROR('Requesting user role is required.', 16, 1);
 		RETURN;
 	END;
 
-	DECLARE @IsAdmin BIT =
-		CASE
-			WHEN @RequestingRoleName = 'Administrator' THEN 1
-			ELSE 0
-		END;
+	DECLARE @StartRow INT = (@CurrentPage - 1) * @PageSize + 1;
+	DECLARE @EndRow INT = @StartRow + @PageSize - 1;
+
+	-- NOTE: the previous lookup of the requesting user's role via a
+	-- Users/RoleTypes JOIN has been removed. The role is now trusted
+	-- from the caller (it was already validated as part of the JWT).
+	-- This saves one full table scan/join on every paged request.
 
 	DECLARE @SortField NVARCHAR(50);
 	DECLARE @SortDirRaw NVARCHAR(10);
@@ -200,7 +191,11 @@ BEGIN
 			ON u.UserPK = ud.UserPK
 		WHERE
 			(@IncludeInactive = 1 OR u.ActiveStatus = 1)
-			AND (@IsAdmin = 1 OR r.RoleName <> 'Administrator')
+			AND (
+				@RequestingUserRole = 'Administrator'
+				OR (@RequestingUserRole = 'Manager' AND r.RoleName IN ('Manager', 'User'))
+				OR (@RequestingUserRole = 'User' AND r.RoleName = 'User')
+			)
 			AND (
 				@IsFilterUsed = 0
 				OR (

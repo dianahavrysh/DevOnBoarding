@@ -22,4 +22,11 @@ public interface ITokenClaimsService
     /// <param name="principal">The claims principal from an authenticated JWT token.</param>
     /// <returns>The user's username.</returns>
     string? GetUsernameFromPrincipal(ClaimsPrincipal principal);
+
+    /// <summary>
+    /// Extracts the user's role from the authenticated claims principal.
+    /// </summary>
+    /// <param name="principal">The claims principal from an authenticated JWT token.</param>
+    /// <returns>The user's role name, or null if not found.</returns>
+    string? GetRoleFromPrincipal(ClaimsPrincipal principal);
 }

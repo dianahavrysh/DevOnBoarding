@@ -109,63 +109,61 @@ namespace DAL;
             return user;
         }
 
-        /// <inheritdoc />
-        public async Task<(List<User> Items, int TotalRows)> GetByPageAsync(
-            Guid RequestingUserPK,
-            int CurrentPage,
-            int PageSize,
-            string? SortExpression,
-            string? SearchValue,
-            bool SearchByUserName,
-            bool SearchByEmail,
-            bool SearchByFirstName,
-            bool SearchBySecondName,
-            bool IncludeInactive,
-            bool StrictMatch) {
-            var users = new List<User>();
-            var totalRows = 0;
+    /// <inheritdoc />
+    public async Task<(List<User> Items, int TotalRows)> GetByPageAsync(
+        string RequestingUserRole,
+        int CurrentPage,
+        int PageSize,
+        string? SortExpression,
+        string? SearchValue,
+        bool SearchByUserName,
+        bool SearchByEmail,
+        bool SearchByFirstName,
+        bool SearchBySecondName,
+        bool IncludeInactive,
+        bool StrictMatch) {
+        var users = new List<User>();
+        var totalRows = 0;
 
-            var parameters = new List<IDataParameter>
-            {
-                CreateParam(nameof(RequestingUserPK), RequestingUserPK),
-                CreateParam(nameof(CurrentPage), CurrentPage),
-                CreateParam(nameof(PageSize), PageSize),
-                CreateParam(nameof(SortExpression), SortExpression),
-                CreateParam(nameof(SearchValue), SearchValue),
-                CreateParam(nameof(SearchByUserName), SearchByUserName),
-                CreateParam(nameof(SearchByEmail), SearchByEmail),
-                CreateParam(nameof(SearchByFirstName), SearchByFirstName),
-                CreateParam(nameof(SearchBySecondName), SearchBySecondName),
-                CreateParam(nameof(IncludeInactive), IncludeInactive),
-                CreateParam(nameof(StrictMatch), StrictMatch)
-            };
+        var parameters = new List<IDataParameter>
+        {
+            CreateParam(nameof(RequestingUserRole), RequestingUserRole),
+            CreateParam(nameof(CurrentPage), CurrentPage),
+            CreateParam(nameof(PageSize), PageSize),
+            CreateParam(nameof(SortExpression), SortExpression),
+            CreateParam(nameof(SearchValue), SearchValue),
+            CreateParam(nameof(SearchByUserName), SearchByUserName),
+            CreateParam(nameof(SearchByEmail), SearchByEmail),
+            CreateParam(nameof(SearchByFirstName), SearchByFirstName),
+            CreateParam(nameof(SearchBySecondName), SearchBySecondName),
+            CreateParam(nameof(IncludeInactive), IncludeInactive),
+            CreateParam(nameof(StrictMatch), StrictMatch)
+        };
 
-            AddSearchByFieldParameters(parameters, SearchByFields);
+        using var reader = await ExecuteReaderAsync(
+            StoreProcedureNames.UsersSelectByPage,
+            parameters);
 
-            using var reader = await ExecuteReaderAsync(
-                StoreProcedureNames.UsersSelectByPage,
-                parameters);
+        var totalRowsSet = false;
 
-            var totalRowsSet = false;
-
-            while (await reader.ReadAsync()) {
-                if (!totalRowsSet) {
-                    totalRows = reader.GetValue("TotalRows", 0);
-                    totalRowsSet = true;
-                }
-
-                users.Add(PopulateUser(reader));
+        while (await reader.ReadAsync()) {
+            if (!totalRowsSet) {
+                totalRows = reader.GetValue("TotalRows", 0);
+                totalRowsSet = true;
             }
 
-            return (users, totalRows);
+            users.Add(PopulateUser(reader));
         }
 
-        /// <summary>
-        /// Populates a <see cref="User"/> from the current row of the reader
-        /// using the <see cref="DataReaderExtensions.GetValue{T}"/> helpers.
-        /// Shared by <see cref="GetByPKAsync"/> and <see cref="GetByPageAsync"/>.
-        /// </summary>
-        private static User PopulateUser(DbDataReader reader) {
+        return (users, totalRows);
+    }
+
+    /// <summary>
+    /// Populates a <see cref="User"/> from the current row of the reader
+    /// using the <see cref="DataReaderExtensions.GetValue{T}"/> helpers.
+    /// Shared by <see cref="GetByPKAsync"/> and <see cref="GetByPageAsync"/>.
+    /// </summary>
+    private static User PopulateUser(DbDataReader reader) {
             return new User {
                 UserPK = reader.GetValue(nameof(User.UserPK), Guid.Empty),
                 UserName = reader.GetValue(nameof(User.UserName), string.Empty),
@@ -202,24 +200,5 @@ namespace DAL;
             parameters.Add(CreateParam(nameof(User.BirthDate), user.BirthDate));
 
             return parameters;
-        }
-
-        private void AddSearchByFieldParameters(
-            ICollection<IDataParameter> parameters,
-            Dictionary<string, bool>? searchByFields) {
-            searchByFields ??= new Dictionary<string, bool>();
-
-            parameters.Add(CreateParam(
-                "SearchByUserName",
-                searchByFields.GetValueOrDefault("UserName")));
-            parameters.Add(CreateParam(
-                "SearchByEmail",
-                searchByFields.GetValueOrDefault("Email")));
-            parameters.Add(CreateParam(
-                "SearchByFirstName",
-                searchByFields.GetValueOrDefault("FirstName")));
-            parameters.Add(CreateParam(
-                "SearchBySecondName",
-                searchByFields.GetValueOrDefault("SecondName")));
         }
     }

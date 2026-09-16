@@ -76,47 +76,53 @@ namespace Services;
             }
         }
 
-        /// <inheritdoc />
-        public async Task<(List<UserDTO> Items, int TotalRows)> GetByPageAsync(
-            Guid requestingUserPK,
-            int currentPage,
-            int pageSize,
-            string? sortExpression,
-            string? searchValue,
-            Dictionary<string, bool>? searchByFields,
-            bool includeInactive,
-            bool strictMatch) {
-            try {
-                var (items, total) = await _manager.GetByPageAsync(
-                    requestingUserPK,
-                    currentPage,
-                    pageSize,
-                    sortExpression,
-                    searchValue,
-                    searchByFields,
-                    includeInactive,
-                    strictMatch);
+    /// <inheritdoc />
+    public async Task<(List<UserDTO> Items, int TotalRows)> GetByPageAsync(
+        string requestingUserRole,
+        int currentPage,
+        int pageSize,
+        string? sortExpression,
+        string? searchValue,
+        bool searchByUserName,
+        bool searchByEmail,
+        bool searchByFirstName,
+        bool searchBySecondName,
+        bool includeInactive,
+        bool strictMatch) {
+        try {
+            var (items, total) = await _manager.GetByPageAsync(
+                requestingUserRole,
+                currentPage,
+                pageSize,
+                sortExpression,
+                searchValue,
+                searchByUserName,
+                searchByEmail,
+                searchByFirstName,
+                searchBySecondName,
+                includeInactive,
+                strictMatch);
 
-                return (
-                    _mapper.Map<List<UserDTO>>(items),
-                    total);
-            }
-            catch (Exception ex) {
-                _logger.LogError(
-                    ex,
-                    "Error getting users page " +
-                    "(RequestingUserPK={RequestingUserPK}, " +
-                    "Page={CurrentPage}, PageSize={PageSize})",
-                    requestingUserPK,
-                    currentPage,
-                    pageSize);
-
-                throw;
-            }
+            return (
+                _mapper.Map<List<UserDTO>>(items),
+                total);
         }
+        catch (Exception ex) {
+            _logger.LogError(
+                ex,
+                "Error getting users page " +
+                "(RequestingUserRole={RequestingUserRole}, " +
+                "Page={CurrentPage}, PageSize={PageSize})",
+                requestingUserRole,
+                currentPage,
+                pageSize);
 
-        /// <inheritdoc />
-        public async Task<bool> UpdateAsync(UserCreateUpdateDTO dto) {
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UpdateAsync(UserCreateUpdateDTO dto) {
             try {
                 var user = _mapper.Map<User>(dto);
 
