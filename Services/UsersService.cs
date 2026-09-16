@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Services {
+namespace Services;
     /// <summary>
     /// Application service that exposes user-related operations using DTOs for client consumption.
     /// </summary>
@@ -132,4 +132,4 @@ namespace Services {
             }
         }
     }
-}
+
