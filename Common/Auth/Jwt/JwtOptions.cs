@@ -1,4 +1,4 @@
-namespace Common.Auth;
+namespace Common.Auth.Jwt;
 
 /// <summary>
 /// Configuration options for JWT token generation and validation.

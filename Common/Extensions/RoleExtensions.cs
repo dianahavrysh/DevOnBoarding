@@ -1,6 +1,7 @@
 using System;
+using Common.Enums;
 
-namespace Common.Auth;
+namespace Common.Extensions;
 
 /// <summary>
 /// Extension methods for converting between Role enum values and their canonical string representations.
@@ -35,11 +36,10 @@ public static class RoleExtensions
     {
         if (string.IsNullOrWhiteSpace(roleName))
         {
-            role = Role.User; // Default to lowest privilege on null/empty
+            role = Role.User; 
             return false;
         }
 
-        // Case-insensitive comparison matching RoleNames behavior
         return roleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase)
             ? (role = Role.Administrator, true).Item2
             : roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase)

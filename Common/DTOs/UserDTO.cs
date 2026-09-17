@@ -18,17 +18,14 @@ namespace Common.DTOs
         public bool ActiveStatus { get; set; }
         /// <summary>
         /// User's role name (e.g., "Administrator", "Manager", "User").
-        /// Serialized as a string for API compatibility. This is the canonical role name used throughout the system.
-        /// 
-        /// Internal code should use the strongly-typed Role enum for privilege checks; see RoleExtensions for conversions.
         /// See RoleExtensions.TryParseRole() to safely convert this string to a Role enum value.
-        /// See Common.Auth.RoleHierarchy for role hierarchy comparisons.
         /// </summary>
         public string RoleName { get; set; } = string.Empty;
         /// <summary>
-        /// Role type primary key, exposed so clients can pre-select the correct role when editing a user.
+        /// Role id (dbo.Roles.Id: 1=User, 2=Manager, 3=Administrator), exposed so clients
+        /// can pre-select the correct role when editing a user.
         /// </summary>
-        public Guid RoleTypePK { get; set; }
+        public byte RoleId { get; set; }
         /// <summary>User first name.</summary>
         public string FirstName { get; set; } = string.Empty;
         /// <summary>User last name (optional).</summary>

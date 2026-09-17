@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Common.Auth;
-using Common.Constants;
 using Common.DTOs;
 using Common.Interfaces;
 

@@ -1,4 +1,5 @@
 using System;
+using Common.Auth.Jwt;
 using Common.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -25,10 +26,8 @@ public static class ServiceCollectionExtensions
             throw new ArgumentNullException(nameof(services));
         }
 
-        // Register internal JwtTokenService - clients see only IJwtTokenService interface
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 
-        // Validate JWT options on startup
         services.AddSingleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>();
 
         return services;

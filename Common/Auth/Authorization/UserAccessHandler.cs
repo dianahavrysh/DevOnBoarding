@@ -1,9 +1,11 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Common.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
+using Common.Enums;
+using Common.Extensions;
+using Common.Auth.Authorization;
 
 namespace Common.Auth;
 
@@ -39,7 +41,6 @@ public sealed class UserAccessHandler : AuthorizationHandler<UserAccessRequireme
             context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
             out var id) ? id : Guid.Empty;
 
-        // Parse requester role claim; deny access if invalid
         if (!RoleExtensions.TryParseRole(requesterRoleString, out var requesterRole))
         {
             _logger.LogWarning(
@@ -49,7 +50,6 @@ public sealed class UserAccessHandler : AuthorizationHandler<UserAccessRequireme
             return Task.CompletedTask;
         }
 
-        // Parse target user role; deny access if target role is invalid
         if (!RoleExtensions.TryParseRole(target.RoleName, out var targetRole))
         {
             _logger.LogWarning(
@@ -59,21 +59,21 @@ public sealed class UserAccessHandler : AuthorizationHandler<UserAccessRequireme
             return Task.CompletedTask;
         }
 
-        bool allowed = requirement.Operation switch
-        {
+        bool allowed = requirement.Operation switch {
             // View: Requester must have at least the same role level as target
             UserOperation.View => RoleHierarchy.IsAtLeast(requesterRole, targetRole),
 
-            // Edit: Administrator can edit anyone, Manager can edit Users and themselves, User can edit themselves
+            // Edit: Administrator can edit anyone; anyone can edit themselves; Manager can edit Users
             UserOperation.Edit =>
                 requesterRole == Role.Administrator
                 || (requesterRole == Role.Manager && targetRole == Role.User)
-                || (requesterRole == Role.User && requesterId == target.UserPK),
+                || requesterId == target.UserPK,
 
-            // Delete: Administrator can delete anyone, Manager can delete Users only
+            // Delete: Administrator can delete anyone; Manager can delete Users only; anyone can delete themselves
             UserOperation.Delete =>
                 requesterRole == Role.Administrator
-                || (requesterRole == Role.Manager && targetRole == Role.User),
+                || (requesterRole == Role.Manager && targetRole == Role.User)
+                || requesterId == target.UserPK,
 
             _ => false
         };

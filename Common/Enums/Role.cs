@@ -1,4 +1,4 @@
-namespace Common.Auth;
+namespace Common.Enums;
 
 /// <summary>
 /// Strongly-typed role enumeration with hierarchical privilege levels.

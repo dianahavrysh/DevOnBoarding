@@ -1,33 +1,10 @@
 using System;
-using Microsoft.AspNetCore.Authorization;
+using System.Collections.Generic;
+using System.Text;
+using Common.Enums;
+using Common.Extensions;
 
-namespace Common.Auth;
-
-/// <summary>
-/// Specifies the operation being performed on a user resource.
-/// </summary>
-public enum UserOperation
-{
-    View,
-    Edit,
-    Delete
-}
-
-/// <summary>
-/// Authorization requirement for evaluating user access to perform specific operations.
-/// </summary>
-public class UserAccessRequirement : IAuthorizationRequirement
-{
-    /// <summary>
-    /// Gets the operation to be performed.
-    /// </summary>
-    public UserOperation Operation { get; }
-
-    /// <summary>
-    /// Creates a new authorization requirement for the specified operation.
-    /// </summary>
-    public UserAccessRequirement(UserOperation operation) => Operation = operation;
-}
+namespace Common.DTOs;
 
 /// <summary>
 /// Minimal data needed about the target user to make an authorization decision.
@@ -36,8 +13,7 @@ public class UserAccessRequirement : IAuthorizationRequirement
 /// The RoleEnum property provides a computed, parsed version of RoleName for type-safe
 /// role comparisons. If RoleName is invalid or null, RoleEnum returns null.
 /// </summary>
-public record TargetUserInfo(Guid UserPK, string RoleName)
-{
+public record TargetUserInfo(Guid UserPK, string RoleName) {
     /// <summary>
     /// Gets the role as a strongly-typed enum value, parsed from RoleName.
     /// 

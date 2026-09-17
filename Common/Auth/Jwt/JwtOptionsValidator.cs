@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 
-namespace Common.Auth;
+namespace Common.Auth.Jwt;
 
 /// <summary>
 /// Validates JWT configuration options at startup.

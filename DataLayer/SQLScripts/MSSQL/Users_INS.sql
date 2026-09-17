@@ -3,7 +3,7 @@ CREATE PROCEDURE dbo.Users_INS
     @Email NVARCHAR(50),
     @Password NVARCHAR(50),
     @ActiveStatus BIT,
-    @RoleTypePK UNIQUEIDENTIFIER,
+    @RoleId TINYINT,
     @FirstName NVARCHAR(50),
     @SecondName NVARCHAR(50) = NULL,
     @BirthDate DATETIME2(7) = NULL,
@@ -24,7 +24,7 @@ BEGIN
             Email,
             Password,
             ActiveStatus,
-            RoleTypePK
+            RoleId
         )
         VALUES
         (
@@ -33,7 +33,7 @@ BEGIN
             @Email,
             @Password,
             @ActiveStatus,
-            @RoleTypePK
+            @RoleId
         );
 
         INSERT INTO dbo.UserData

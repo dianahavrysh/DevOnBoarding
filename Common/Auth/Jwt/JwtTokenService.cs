@@ -7,7 +7,7 @@ using Common.Interfaces;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Common.Auth;
+namespace Common.Auth.Jwt;
 
 /// <summary>
 /// Implementation of JWT token generation and validation.

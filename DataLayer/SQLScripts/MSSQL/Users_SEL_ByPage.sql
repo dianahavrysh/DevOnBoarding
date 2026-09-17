@@ -88,7 +88,7 @@ BEGIN
 			u.Email,
 			u.Password,
 			u.ActiveStatus,
-			u.RoleTypePK,
+			u.RoleId,
 			r.RoleName,
 			ud.FirstName,
 			ud.SecondName,
@@ -182,11 +182,11 @@ BEGIN
 					END DESC,
 
 					u.UserName ASC
-			) AS RowNum
+				) AS RowNum
 
 		FROM dbo.Users u WITH (NOLOCK)
-		LEFT JOIN dbo.RoleTypes r WITH (NOLOCK)
-			ON u.RoleTypePK = r.RoleTypePK
+		LEFT JOIN dbo.Roles r WITH (NOLOCK)
+			ON u.RoleId = r.Id
 		LEFT JOIN dbo.UserData ud WITH (NOLOCK)
 			ON u.UserPK = ud.UserPK
 		WHERE
@@ -239,7 +239,7 @@ BEGIN
 		Email,
 		Password,
 		ActiveStatus,
-		RoleTypePK,
+		RoleId,
 		RoleName,
 		FirstName,
 		SecondName,

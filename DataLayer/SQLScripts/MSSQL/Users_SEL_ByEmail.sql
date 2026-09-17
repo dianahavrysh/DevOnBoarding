@@ -10,14 +10,14 @@ BEGIN
         u.Email,
         u.Password,
         u.ActiveStatus,
-        u.RoleTypePK,
+        u.RoleId,
         r.RoleName,
         ud.FirstName,
         ud.SecondName,
         ud.BirthDate
     FROM Users AS u
-    JOIN RoleTypes AS r
-        ON u.RoleTypePK = r.RoleTypePK
+    JOIN dbo.Roles AS r
+        ON u.RoleId = r.Id
     JOIN UserData AS ud
         ON u.UserPK = ud.UserPK
     WHERE u.Email = @Email;

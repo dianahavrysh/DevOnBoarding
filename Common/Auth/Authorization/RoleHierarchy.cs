@@ -1,4 +1,6 @@
-namespace Common.Auth;
+using Common.Enums;
+
+namespace Common.Auth.Authorization;
 
 /// <summary>
 /// Defines the hierarchical ordering of roles (higher privilege = higher enum value).
