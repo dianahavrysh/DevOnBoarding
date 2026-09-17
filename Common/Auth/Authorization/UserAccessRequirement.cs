@@ -3,7 +3,7 @@ using Common.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Common.Enums;
 
-namespace Common.Auth;
+namespace Common.Auth.Authorization;
 
 /// <summary>
 /// Authorization requirement for evaluating user access to perform specific operations.

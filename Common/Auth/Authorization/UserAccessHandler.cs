@@ -3,11 +3,11 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
+using Common.DTOs;
 using Common.Enums;
 using Common.Extensions;
-using Common.Auth.Authorization;
 
-namespace Common.Auth;
+namespace Common.Auth.Authorization;
 
 /// <summary>
 /// Authorization handler for evaluating user access to perform specific operations.

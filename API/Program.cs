@@ -13,6 +13,8 @@ using Microsoft.IdentityModel.Tokens;
 using Services.Auth;
 using System;
 using System.Text;
+using Common.Auth.Jwt;
+using Common.Auth.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 

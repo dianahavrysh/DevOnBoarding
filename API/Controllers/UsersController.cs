@@ -3,7 +3,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Common.Auth;
+using Common.Auth.Authorization;
+using Common.Enums;
 using Common.DTOs;
 using Common.Interfaces;
 
