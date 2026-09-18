@@ -19,7 +19,7 @@ namespace Common.Entities
         /// <summary>Whether the user account is active.</summary>
         public bool ActiveStatus { get; set; }
         /// <summary>Foreign key to dbo.Roles.Id (1=User, 2=Manager, 3=Administrator).</summary>
-        public byte RoleId { get; set; }
+        public byte RolePK { get; set; }
         /// <summary>Human-readable role name, populated via join to dbo.Roles.</summary>
         public string RoleName { get; set; } = string.Empty;
         /// <summary>User's first name.</summary>

@@ -27,7 +27,7 @@ public static class RoleHierarchy
     /// </summary>
     /// <param name="role">The Role enum value</param>
     /// <returns>The privilege level (User=1, Manager=2, Administrator=3)</returns>
-    public static int LevelOf(Role role) => (int)role;
+    public static byte LevelOf(Role role) => (byte)role;
 
     /// <summary>
     /// Checks if a requester's role has at least the privilege level required.
@@ -43,5 +43,5 @@ public static class RoleHierarchy
     /// <param name="minimumRole">The minimum required role privilege level</param>
     /// <returns>true if requesterRole privilege >= minimumRole privilege</returns>
     public static bool IsAtLeast(Role requesterRole, Role minimumRole) =>
-        (int)requesterRole >= (int)minimumRole;
+        (byte)requesterRole >= (byte)minimumRole;
 }

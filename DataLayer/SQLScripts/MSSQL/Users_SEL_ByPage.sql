@@ -1,5 +1,5 @@
 ALTER PROCEDURE dbo.Users_SEL_ByPage
-	@RequestingUserRole NVARCHAR(50),
+	@RequestingRolePK TINYINT,
 	@CurrentPage INT,
 	@PageSize INT,
 	@SortExpression NVARCHAR(100),
@@ -20,7 +20,7 @@ BEGIN
 	IF @PageSize IS NULL OR @PageSize < 1
 		SET @PageSize = 20;
 
-	IF @RequestingUserRole IS NULL OR LEN(LTRIM(RTRIM(@RequestingUserRole))) = 0
+	IF @RequestingRolePK IS NULL OR @RequestingRolePK < 1
 	BEGIN
 		RAISERROR('Requesting user role is required.', 16, 1);
 		RETURN;
@@ -29,10 +29,12 @@ BEGIN
 	DECLARE @StartRow INT = (@CurrentPage - 1) * @PageSize + 1;
 	DECLARE @EndRow INT = @StartRow + @PageSize - 1;
 
-	-- NOTE: the previous lookup of the requesting user's role via a
-	-- Users/RoleTypes JOIN has been removed. The role is now trusted
-	-- from the caller (it was already validated as part of the JWT).
-	-- This saves one full table scan/join on every paged request.
+	-- The role is trusted from the caller as a numeric RolePK (already validated
+	-- as part of the JWT / resolved server-side before this call). Passing the
+	-- hierarchy level directly, rather than a role name string, lets visibility
+	-- be expressed as a single numeric comparison below instead of a role-name
+	-- IN-list, and avoids a Users/Roles join here just to resolve the caller's
+	-- own role.
 
 	DECLARE @SortField NVARCHAR(50);
 	DECLARE @SortDirRaw NVARCHAR(10);
@@ -88,7 +90,7 @@ BEGIN
 			u.Email,
 			u.Password,
 			u.ActiveStatus,
-			u.RoleId,
+			u.RolePK,
 			r.RoleName,
 			ud.FirstName,
 			ud.SecondName,
@@ -186,16 +188,15 @@ BEGIN
 
 		FROM dbo.Users u WITH (NOLOCK)
 		LEFT JOIN dbo.Roles r WITH (NOLOCK)
-			ON u.RoleId = r.Id
+			ON u.RolePK = r.RolePK
 		LEFT JOIN dbo.UserData ud WITH (NOLOCK)
 			ON u.UserPK = ud.UserPK
 		WHERE
 			(@IncludeInactive = 1 OR u.ActiveStatus = 1)
-			AND (
-				@RequestingUserRole = 'Administrator'
-				OR (@RequestingUserRole = 'Manager' AND r.RoleName IN ('Manager', 'User'))
-				OR (@RequestingUserRole = 'User' AND r.RoleName = 'User')
-			)
+			-- Visibility mirrors RoleHierarchy.IsAtLeast: a requester can see any
+			-- target whose privilege level is <= their own. Administrator (3) sees
+			-- everyone; Manager (2) sees Manager+User; User (1) sees only User.
+			AND r.RolePK <= @RequestingRolePK
 			AND (
 				@IsFilterUsed = 0
 				OR (
@@ -239,7 +240,7 @@ BEGIN
 		Email,
 		Password,
 		ActiveStatus,
-		RoleId,
+		RolePK,
 		RoleName,
 		FirstName,
 		SecondName,

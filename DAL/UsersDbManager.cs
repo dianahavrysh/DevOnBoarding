@@ -112,7 +112,7 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
 
     /// <inheritdoc />
     public async Task<(List<User> Items, int TotalRows)> GetByPageAsync(
-        string RequestingUserRole,
+        byte RequestingRolePK,
         int CurrentPage,
         int PageSize,
         string? SortExpression,
@@ -128,18 +128,18 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
 
         var parameters = new List<IDataParameter>
         {
-            CreateParam(nameof(RequestingUserRole), RequestingUserRole),
-            CreateParam(nameof(CurrentPage), CurrentPage),
-            CreateParam(nameof(PageSize), PageSize),
-            CreateParam(nameof(SortExpression), SortExpression),
-            CreateParam(nameof(SearchValue), SearchValue),
-            CreateParam(nameof(SearchByUserName), SearchByUserName),
-            CreateParam(nameof(SearchByEmail), SearchByEmail),
-            CreateParam(nameof(SearchByFirstName), SearchByFirstName),
-            CreateParam(nameof(SearchBySecondName), SearchBySecondName),
-            CreateParam(nameof(IncludeInactive), IncludeInactive),
-            CreateParam(nameof(StrictMatch), StrictMatch)
-        };
+        CreateParam(nameof(RequestingRolePK), RequestingRolePK),
+        CreateParam(nameof(CurrentPage), CurrentPage),
+        CreateParam(nameof(PageSize), PageSize),
+        CreateParam(nameof(SortExpression), SortExpression),
+        CreateParam(nameof(SearchValue), SearchValue),
+        CreateParam(nameof(SearchByUserName), SearchByUserName),
+        CreateParam(nameof(SearchByEmail), SearchByEmail),
+        CreateParam(nameof(SearchByFirstName), SearchByFirstName),
+        CreateParam(nameof(SearchBySecondName), SearchBySecondName),
+        CreateParam(nameof(IncludeInactive), IncludeInactive),
+        CreateParam(nameof(StrictMatch), StrictMatch)
+    };
 
         using var reader = await ExecuteReaderAsync(
             StoreProcedureNames.UsersSelectByPage,
@@ -171,7 +171,7 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
             Email = reader.GetValue(nameof(User.Email), string.Empty),
             Password = reader.GetValue(nameof(User.Password), string.Empty),
             ActiveStatus = reader.GetValue(nameof(User.ActiveStatus), false),
-            RoleId = reader.GetValue(nameof(User.RoleId), (byte)0),
+            RolePK = reader.GetValue(nameof(User.RolePK), (byte)0),
             RoleName = reader.GetValue(nameof(User.RoleName), string.Empty),
             FirstName = reader.GetValue(nameof(User.FirstName), string.Empty),
             SecondName = reader.GetValue<string?>(nameof(User.SecondName), null),
@@ -195,7 +195,7 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
         parameters.Add(CreateParam(nameof(User.Email), user.Email));
         parameters.Add(CreateParam(nameof(User.Password), user.Password));
         parameters.Add(CreateParam(nameof(User.ActiveStatus), user.ActiveStatus));
-        parameters.Add(CreateParam(nameof(User.RoleId), user.RoleId));
+        parameters.Add(CreateParam(nameof(User.RolePK), user.RolePK));
         parameters.Add(CreateParam(nameof(User.FirstName), user.FirstName));
         parameters.Add(CreateParam(nameof(User.SecondName), user.SecondName));
         parameters.Add(CreateParam(nameof(User.BirthDate), user.BirthDate));

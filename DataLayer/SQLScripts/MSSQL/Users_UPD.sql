@@ -4,7 +4,7 @@ CREATE PROCEDURE dbo.Users_UPD
 	@Email NVARCHAR(50),
 	@Password NVARCHAR(50),
 	@ActiveStatus BIT,
-	@RoleId TINYINT,
+	@RolePK TINYINT,
 	@FirstName NVARCHAR(50),
 	@SecondName NVARCHAR(50) = NULL,
 	@BirthDate DATETIME2(7) = NULL,
@@ -22,7 +22,7 @@ BEGIN
 			Email = @Email, 
 			Password = @Password,
 			ActiveStatus = @ActiveStatus,
-			RoleId = @RoleId
+			RolePK = @RolePK
 		WHERE UserPK = @UserPK;
 
 		IF @@ROWCOUNT > 0

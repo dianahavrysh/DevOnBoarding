@@ -13,6 +13,10 @@ public enum UserOperation {
     /// </summary>
     View,
     /// <summary>
+    /// Represents the operation of creating a new user.
+    /// </summary>
+    Create,
+    /// <summary>
     /// Represents the operation of editing user details.
     /// </summary>
     Edit,

@@ -11,84 +11,95 @@ namespace Common.Auth.Authorization;
 
 /// <summary>
 /// Authorization handler for evaluating user access to perform specific operations.
-/// Implements role-based and identity-based authorization policies.
-/// 
-/// This handler converts string role claims to strongly-typed Role enum values
-/// and performs all privilege checks using enum-based comparisons for type safety.
 /// </summary>
-public sealed class UserAccessHandler : AuthorizationHandler<UserAccessRequirement, TargetUserInfo>
-{
+public sealed class UserAccessHandler
+    : AuthorizationHandler<UserAccessRequirement, TargetUserInfo> {
     private readonly ILogger<UserAccessHandler> _logger;
 
-    public UserAccessHandler(ILogger<UserAccessHandler> logger)
-    {
+    /// <summary>
+    /// Creates a new instance of the <see cref="UserAccessHandler"/> class.
+    /// </summary>
+    /// <param name="logger"></param>
+    public UserAccessHandler(ILogger<UserAccessHandler> logger) {
         _logger = logger;
     }
 
     /// <summary>
-    /// Evaluates whether the current user is authorized to perform the required operation on the target user.
-    /// 
-    /// Authorization decisions are made by converting string role claims to strongly-typed Role enum values
-    /// and comparing them using the RoleHierarchy utility.
+    /// Handles the authorization requirement for user access.
     /// </summary>
+    /// <param name="context"></param>
+    /// <param name="requirement"></param>
+    /// <param name="target"></param>
+    /// <returns></returns>
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         UserAccessRequirement requirement,
-        TargetUserInfo target)
-    {
-        var requesterRoleString = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        TargetUserInfo target) {
+        var requesterRoleString =
+            context.User.FindFirst(ClaimTypes.Role)?.Value;
+
         var requesterId = Guid.TryParse(
             context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
-            out var id) ? id : Guid.Empty;
+            out var id)
+                ? id
+                : Guid.Empty;
 
-        if (!RoleExtensions.TryParseRole(requesterRoleString, out var requesterRole))
-        {
+        if (!RoleExtensions.TryParseRole(
+                requesterRoleString,
+                out var requesterRole)) {
             _logger.LogWarning(
                 "Invalid role '{InvalidRole}' in JWT claim for user {UserId}. Access denied.",
                 requesterRoleString,
                 requesterId);
+
             return Task.CompletedTask;
         }
 
-        if (!RoleExtensions.TryParseRole(target.RoleName, out var targetRole))
-        {
+        if (!Enum.IsDefined(typeof(Role), target.RoleId)) {
             _logger.LogWarning(
-                "Target user {TargetUserId} has invalid role '{InvalidRole}' in database. Access denied.",
+                "Target user {TargetUserId} has invalid role id '{RoleId}' in database. Access denied.",
                 target.UserPK,
-                target.RoleName);
+                target.RoleId);
+
             return Task.CompletedTask;
         }
+
+        var targetRole = (Role)target.RoleId;
+
+        var canManageTargetRole =
+            requesterRole == Role.Administrator
+            || (requesterRole == Role.Manager
+                && targetRole == Role.User);
+
+        var isSelf =
+            requesterId == target.UserPK;
 
         bool allowed = requirement.Operation switch {
-            // View: Requester must have at least the same role level as target
-            UserOperation.View => RoleHierarchy.IsAtLeast(requesterRole, targetRole),
+            UserOperation.View =>
+                RoleHierarchy.IsAtLeast(requesterRole, targetRole),
 
-            // Edit: Administrator can edit anyone; anyone can edit themselves; Manager can edit Users
+            UserOperation.Create =>
+                canManageTargetRole,
+
             UserOperation.Edit =>
-                requesterRole == Role.Administrator
-                || (requesterRole == Role.Manager && targetRole == Role.User)
-                || requesterId == target.UserPK,
+                canManageTargetRole || isSelf,
 
-            // Delete: Administrator can delete anyone; Manager can delete Users only; anyone can delete themselves
             UserOperation.Delete =>
-                requesterRole == Role.Administrator
-                || (requesterRole == Role.Manager && targetRole == Role.User)
-                || requesterId == target.UserPK,
+                canManageTargetRole || isSelf,
 
             _ => false
         };
 
-        if (allowed)
-        {
+        if (allowed) {
             _logger.LogInformation(
                 "Authorization granted: {Operation} on user {TargetUserId} by {RequesterRole}",
                 requirement.Operation,
                 target.UserPK,
                 requesterRole);
+
             context.Succeed(requirement);
         }
-        else
-        {
+        else {
             _logger.LogInformation(
                 "Authorization denied: {Operation} on user {TargetUserId} by {RequesterRole}",
                 requirement.Operation,
