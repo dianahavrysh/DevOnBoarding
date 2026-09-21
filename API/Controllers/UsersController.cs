@@ -1,12 +1,13 @@
 using System;
 using System.Threading.Tasks;
+using API.Attributes;
+using Common.DTOs;
+using Common.Enums;
+using Common.Extensions;
+using Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Common.Enums;
-using Common.DTOs;
-using Common.Interfaces;
-using API.Attributes;
 
 namespace API.Controllers;
 
@@ -67,12 +68,16 @@ public class UsersController : ControllerBase {
         var requestingUserRole =
             _tokenClaimsService.GetRoleFromPrincipal(User);
 
-        if (string.IsNullOrWhiteSpace(requestingUserRole)) {
+        if (!RoleExtensions.TryParseRole(
+            requestingUserRole,
+            out var requestingRole)) {
             return Forbid();
         }
 
+        var requestingRolePK = (byte)requestingRole;
+
         var (items, totalRows) = await _service.GetByPageAsync(
-            requestingUserRole,
+            requestingRolePK,
             currentPage,
             pageSize,
             sortExpression,

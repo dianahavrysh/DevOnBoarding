@@ -77,8 +77,9 @@ namespace Services;
         }
 
     /// <inheritdoc />
+    /// <inheritdoc />
     public async Task<(List<UserDTO> Items, int TotalRows)> GetByPageAsync(
-        string requestingUserRole,
+        byte requestingRolePK,
         int currentPage,
         int pageSize,
         string? sortExpression,
@@ -91,7 +92,7 @@ namespace Services;
         bool strictMatch) {
         try {
             var (items, total) = await _manager.GetByPageAsync(
-                requestingUserRole,
+                requestingRolePK,
                 currentPage,
                 pageSize,
                 sortExpression,
@@ -111,9 +112,9 @@ namespace Services;
             _logger.LogError(
                 ex,
                 "Error getting users page " +
-                "(RequestingUserRole={RequestingUserRole}, " +
+                "(RequestingRolePK={RequestingRolePK}, " +
                 "Page={CurrentPage}, PageSize={PageSize})",
-                requestingUserRole,
+                requestingRolePK,
                 currentPage,
                 pageSize);
 

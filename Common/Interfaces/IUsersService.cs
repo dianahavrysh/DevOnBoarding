@@ -16,9 +16,8 @@ namespace Common.Interfaces {
         /// <summary>
         /// Retrieve a paginated list of user DTOs asynchronously. Returns items and total rows.
         /// </summary>
-        /// <param name="requestingUserRole">The role of the requesting user for row-level filtering.</param>
         Task<(List<UserDTO> Items, int TotalRows)> GetByPageAsync(
-            string requestingUserRole,
+            byte requestingRolePK,
             int currentPage,
             int pageSize,
             string? sortExpression,

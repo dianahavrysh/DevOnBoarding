@@ -1,48 +1,62 @@
+USE [DevOnBoarding];
+GO
+
 IF OBJECT_ID('dbo.Roles', 'U') IS NOT NULL
     THROW 50000, 'dbo.Roles already exists. Aborting.', 1;
+GO
 
 CREATE TABLE dbo.Roles
 (
-    Id       TINYINT      NOT NULL PRIMARY KEY,
-    RoleName NVARCHAR(50) NOT NULL UNIQUE,
-    CONSTRAINT CK_Roles_Id CHECK (Id BETWEEN 1 AND 3)
-);
+    RolePK   TINYINT      NOT NULL,
+    RoleName NVARCHAR(50) NOT NULL,
 
-INSERT INTO dbo.Roles (Id, RoleName)
+    CONSTRAINT PK_Roles
+        PRIMARY KEY (RolePK),
+
+    CONSTRAINT UQ_Roles_RoleName
+        UNIQUE (RoleName)
+);
+GO
+
+INSERT INTO dbo.Roles (RolePK, RoleName)
 VALUES
     (1, 'User'),
     (2, 'Manager'),
     (3, 'Administrator');
+GO
 
 
-IF COL_LENGTH('dbo.Users', 'RoleId') IS NOT NULL
-    THROW 50001, 'Users.RoleId already exists. Aborting.', 1;
+IF COL_LENGTH('dbo.Users', 'RolePK') IS NOT NULL
+    THROW 50001, 'Users.RolePK already exists. Aborting.', 1;
+GO
 
 ALTER TABLE dbo.Users
-ADD RoleId TINYINT NULL;
+ADD RolePK TINYINT NULL;
 GO
 
 
 UPDATE u
-SET u.RoleId = r.Id
+SET u.RolePK = r.RolePK
 FROM dbo.Users u
 JOIN dbo.RoleTypes rt
     ON rt.RoleTypePK = u.RoleTypePK
 JOIN dbo.Roles r
     ON r.RoleName = rt.RoleName;
+GO
 
 
-IF EXISTS (SELECT 1 FROM dbo.Users WHERE RoleId IS NULL)
+IF EXISTS (
+    SELECT 1
+    FROM dbo.Users
+    WHERE RolePK IS NULL
+)
     THROW 50002, 'Migration failed: some users could not be mapped to a role.', 1;
+GO
 
 
 ALTER TABLE dbo.Users
-ALTER COLUMN RoleId TINYINT NOT NULL;
-
-ALTER TABLE dbo.Users
-ADD CONSTRAINT FK_Users_Roles
-    FOREIGN KEY (RoleId)
-    REFERENCES dbo.Roles(Id);
+ALTER COLUMN RolePK TINYINT NOT NULL;
+GO
 
 
 DECLARE @RoleTypeFK sysname;
@@ -56,17 +70,29 @@ JOIN sys.columns c
     ON c.object_id = fkc.parent_object_id
     AND c.column_id = fkc.parent_column_id
 WHERE fk.parent_object_id = OBJECT_ID('dbo.Users')
-  AND c.name = 'RoleTypePK';
+    AND c.name = 'RoleTypePK';
 
 IF @RoleTypeFK IS NOT NULL
 BEGIN
-    SET @Sql = N'ALTER TABLE dbo.Users DROP CONSTRAINT ' + QUOTENAME(@RoleTypeFK);
+    SET @Sql =
+        N'ALTER TABLE dbo.Users DROP CONSTRAINT '
+        + QUOTENAME(@RoleTypeFK);
+
     EXEC sp_executesql @Sql;
 END;
+GO
+
+
+ALTER TABLE dbo.Users
+ADD CONSTRAINT FK_Users_Roles
+    FOREIGN KEY (RolePK)
+    REFERENCES dbo.Roles(RolePK);
+GO
 
 
 ALTER TABLE dbo.Users
 DROP COLUMN RoleTypePK;
+GO
 
 DROP TABLE dbo.RoleTypes;
 GO
