@@ -40,7 +40,7 @@ public class UserAccessFilter : IAsyncActionFilter {
 
             target = new TargetUserInfo(
                 Guid.Empty,
-                createDto.RoleId);
+                createDto.RolePK);
         }
         else {
             if (!TryResolveTargetId(context, out var targetId)) {
@@ -60,7 +60,7 @@ public class UserAccessFilter : IAsyncActionFilter {
 
             target = new TargetUserInfo(
                 existing.UserPK,
-                existing.RoleId);
+                existing.RolePK);
 
             context.HttpContext.Items["TargetUser"] = existing;
         }
