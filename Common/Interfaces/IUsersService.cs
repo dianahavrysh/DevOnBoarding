@@ -14,15 +14,18 @@ namespace Common.Interfaces {
         Task<UserDTO?> GetByPKAsync(Guid userPK);
 
         /// <summary>
-        /// Retrieve a paginated list of user DTOs asynchronously.
+        /// Retrieve a paginated list of user DTOs asynchronously. Returns items and total rows.
         /// </summary>
         Task<(List<UserDTO> Items, int TotalRows)> GetByPageAsync(
-            Guid requestingUserPK,
+            byte requestingRolePK,
             int currentPage,
             int pageSize,
             string? sortExpression,
             string? searchValue,
-            Dictionary<string, bool>? searchByFields,
+            bool searchByUserName,
+            bool searchByEmail,
+            bool searchByFirstName,
+            bool searchBySecondName,
             bool includeInactive,
             bool strictMatch);
 

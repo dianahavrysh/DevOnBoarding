@@ -42,4 +42,18 @@ internal class TokenClaimsService : ITokenClaimsService
         var usernameClaim = principal.FindFirst(ClaimTypes.Name);
         return usernameClaim?.Value;
     }
+
+    /// <summary>
+    /// Extracts the user's role from the claims principal.
+    /// </summary>
+    public string? GetRoleFromPrincipal(ClaimsPrincipal principal)
+    {
+        if (principal == null)
+        {
+            throw new ArgumentNullException(nameof(principal));
+        }
+
+        var roleClaim = principal.FindFirst(ClaimTypes.Role);
+        return roleClaim?.Value;
+    }
 }

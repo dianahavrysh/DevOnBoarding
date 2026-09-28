@@ -16,12 +16,16 @@ namespace Common.DTOs
         public string Email { get; set; } = string.Empty;
         /// <summary>Whether the user is active.</summary>
         public bool ActiveStatus { get; set; }
-        /// <summary>Role display name.</summary>
+        /// <summary>
+        /// User's role name (e.g., "Administrator", "Manager", "User").
+        /// See RoleExtensions.TryParseRole() to safely convert this string to a Role enum value.
+        /// </summary>
         public string RoleName { get; set; } = string.Empty;
         /// <summary>
-        /// Role type primary key, exposed so clients can pre-select the correct role when editing a user.
+        /// Role id (dbo.Roles.Id: 1=User, 2=Manager, 3=Administrator), exposed so clients
+        /// can pre-select the correct role when editing a user.
         /// </summary>
-        public Guid RoleTypePK { get; set; }
+        public byte RoleId { get; set; }
         /// <summary>User first name.</summary>
         public string FirstName { get; set; } = string.Empty;
         /// <summary>User last name (optional).</summary>

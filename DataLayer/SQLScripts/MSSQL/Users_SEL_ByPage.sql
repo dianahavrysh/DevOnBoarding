@@ -1,5 +1,5 @@
-CREATE PROCEDURE dbo.Users_SEL_ByPage
-	@RequestingUserPK UNIQUEIDENTIFIER,
+ALTER PROCEDURE dbo.Users_SEL_ByPage
+	@RequestingRolePK TINYINT,
 	@CurrentPage INT,
 	@PageSize INT,
 	@SortExpression NVARCHAR(100),
@@ -20,28 +20,21 @@ BEGIN
 	IF @PageSize IS NULL OR @PageSize < 1
 		SET @PageSize = 20;
 
-	DECLARE @StartRow INT = (@CurrentPage - 1) * @PageSize + 1;
-	DECLARE @EndRow INT = @StartRow + @PageSize - 1;
-
-	DECLARE @RequestingRoleName VARCHAR(50);
-
-	SELECT @RequestingRoleName = r.RoleName
-	FROM dbo.Users u WITH (NOLOCK)
-	JOIN dbo.RoleTypes r WITH (NOLOCK)
-		ON r.RoleTypePK = u.RoleTypePK
-	WHERE u.UserPK = @RequestingUserPK;
-
-	IF @RequestingRoleName IS NULL
+	IF @RequestingRolePK IS NULL OR @RequestingRolePK < 1
 	BEGIN
-		RAISERROR('Requesting user not found.', 16, 1);
+		RAISERROR('Requesting user role is required.', 16, 1);
 		RETURN;
 	END;
 
-	DECLARE @IsAdmin BIT =
-		CASE
-			WHEN @RequestingRoleName = 'Administrator' THEN 1
-			ELSE 0
-		END;
+	DECLARE @StartRow INT = (@CurrentPage - 1) * @PageSize + 1;
+	DECLARE @EndRow INT = @StartRow + @PageSize - 1;
+
+	-- The role is trusted from the caller as a numeric RolePK (already validated
+	-- as part of the JWT / resolved server-side before this call). Passing the
+	-- hierarchy level directly, rather than a role name string, lets visibility
+	-- be expressed as a single numeric comparison below instead of a role-name
+	-- IN-list, and avoids a Users/Roles join here just to resolve the caller's
+	-- own role.
 
 	DECLARE @SortField NVARCHAR(50);
 	DECLARE @SortDirRaw NVARCHAR(10);
@@ -97,7 +90,7 @@ BEGIN
 			u.Email,
 			u.Password,
 			u.ActiveStatus,
-			u.RoleTypePK,
+			u.RolePK,
 			r.RoleName,
 			ud.FirstName,
 			ud.SecondName,
@@ -191,16 +184,19 @@ BEGIN
 					END DESC,
 
 					u.UserName ASC
-			) AS RowNum
+				) AS RowNum
 
 		FROM dbo.Users u WITH (NOLOCK)
-		LEFT JOIN dbo.RoleTypes r WITH (NOLOCK)
-			ON u.RoleTypePK = r.RoleTypePK
+		LEFT JOIN dbo.Roles r WITH (NOLOCK)
+			ON u.RolePK = r.RolePK
 		LEFT JOIN dbo.UserData ud WITH (NOLOCK)
 			ON u.UserPK = ud.UserPK
 		WHERE
 			(@IncludeInactive = 1 OR u.ActiveStatus = 1)
-			AND (@IsAdmin = 1 OR r.RoleName <> 'Administrator')
+			-- Visibility mirrors RoleHierarchy.IsAtLeast: a requester can see any
+			-- target whose privilege level is <= their own. Administrator (3) sees
+			-- everyone; Manager (2) sees Manager+User; User (1) sees only User.
+			AND r.RolePK <= @RequestingRolePK
 			AND (
 				@IsFilterUsed = 0
 				OR (
@@ -244,7 +240,7 @@ BEGIN
 		Email,
 		Password,
 		ActiveStatus,
-		RoleTypePK,
+		RolePK,
 		RoleName,
 		FirstName,
 		SecondName,
