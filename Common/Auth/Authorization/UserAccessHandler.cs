@@ -3,9 +3,11 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
+using Common.Caching;
 using Common.DTOs;
 using Common.Enums;
 using Common.Extensions;
+using Common.Interfaces;
 
 namespace Common.Auth.Authorization;
 
@@ -15,13 +17,18 @@ namespace Common.Auth.Authorization;
 public sealed class UserAccessHandler
     : AuthorizationHandler<UserAccessRequirement, TargetUserInfo> {
     private readonly ILogger<UserAccessHandler> _logger;
+    private readonly IUsersService _usersService;
 
     /// <summary>
     /// Creates a new instance of the <see cref="UserAccessHandler"/> class.
     /// </summary>
     /// <param name="logger"></param>
-    public UserAccessHandler(ILogger<UserAccessHandler> logger) {
+    /// <param name="usersService"></param>
+    public UserAccessHandler(
+        ILogger<UserAccessHandler> logger,
+        IUsersService usersService) {
         _logger = logger;
+        _usersService = usersService;
     }
 
     /// <summary>
@@ -31,40 +38,69 @@ public sealed class UserAccessHandler
     /// <param name="requirement"></param>
     /// <param name="target"></param>
     /// <returns></returns>
-    protected override Task HandleRequirementAsync(
+    protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         UserAccessRequirement requirement,
         TargetUserInfo target) {
-        var requesterRoleString =
-            context.User.FindFirst(ClaimTypes.Role)?.Value;
-
         var requesterId = Guid.TryParse(
             context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
             out var id)
                 ? id
                 : Guid.Empty;
 
-        if (!RoleExtensions.TryParseRole(
-                requesterRoleString,
-                out var requesterRole)) {
-            _logger.LogWarning(
-                "Invalid role '{InvalidRole}' in JWT claim for user {UserId}. Access denied.",
-                requesterRoleString,
+        CachedUserRole? requesterCachedRole = null;
+        try {
+            requesterCachedRole = await _usersService.GetRoleAsync(requesterId);
+        }
+        catch (Exception ex) {
+            _logger.LogError(
+                ex,
+                "Error retrieving cached role for requester {RequesterId}. Attempting JWT fallback.",
                 requesterId);
-
-            return Task.CompletedTask;
         }
 
-        if (!Enum.IsDefined(typeof(Role), target.RoleId)) {
+        Role? requesterRole = null;
+
+        if (requesterCachedRole != null) {
+            if (!RoleExtensions.TryParseRole(requesterCachedRole.RoleName, out var parsedRole)) {
+                _logger.LogWarning(
+                    "Cached role name '{RoleName}' for user {UserId} is invalid. Access denied.",
+                    requesterCachedRole.RoleName,
+                    requesterId);
+                return;
+            }
+            requesterRole = parsedRole;
+            _logger.LogDebug(
+                "Using cached role '{RoleName}' for user {UserId}",
+                requesterCachedRole.RoleName,
+                requesterId);
+        }
+        else {
+            var requesterRoleString = context.User.FindFirst(ClaimTypes.Role)?.Value;
+            if (!RoleExtensions.TryParseRole(requesterRoleString, out var parsedRole)) {
+                _logger.LogWarning(
+                    "Invalid role '{InvalidRole}' in JWT claim for user {UserId}. Access denied.",
+                    requesterRoleString,
+                    requesterId);
+                return;
+            }
+            requesterRole = parsedRole;
+            _logger.LogDebug(
+                "No cached role found for user {UserId}; using JWT role '{RoleName}'",
+                requesterId,
+                requesterRoleString);
+        }
+
+        if (!Enum.IsDefined(typeof(Role), target.RolePK)) {
             _logger.LogWarning(
-                "Target user {TargetUserId} has invalid role id '{RoleId}' in database. Access denied.",
+                "Target user {TargetUserId} has invalid role id '{RolePK}' in database. Access denied.",
                 target.UserPK,
-                target.RoleId);
+                target.RolePK);
 
-            return Task.CompletedTask;
+            return;
         }
 
-        var targetRole = (Role)target.RoleId;
+        var targetRole = (Role)target.RolePK;
 
         var canManageTargetRole =
             requesterRole == Role.Administrator
@@ -76,7 +112,7 @@ public sealed class UserAccessHandler
 
         bool allowed = requirement.Operation switch {
             UserOperation.View =>
-                RoleHierarchy.IsAtLeast(requesterRole, targetRole),
+                RoleHierarchy.IsAtLeast(requesterRole.Value, targetRole),
 
             UserOperation.Create =>
                 canManageTargetRole,
@@ -106,7 +142,5 @@ public sealed class UserAccessHandler
                 target.UserPK,
                 requesterRole);
         }
-
-        return Task.CompletedTask;
     }
 }

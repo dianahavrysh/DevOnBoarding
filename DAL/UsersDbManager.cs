@@ -7,6 +7,7 @@ using Common;
 using Common.Database;
 using Common.Entities;
 using Common.Interfaces;
+using Common.Extensions;
 
 namespace DAL;
 

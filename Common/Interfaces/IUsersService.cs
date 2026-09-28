@@ -1,3 +1,4 @@
+using Common.Caching;
 using Common.DTOs;
 using System;
 using System.Collections.Generic;
@@ -44,5 +45,15 @@ namespace Common.Interfaces {
         /// Delete the user identified by the specified primary key asynchronously.
         /// </summary>
         Task DeleteAsync(Guid userPK);
+
+        /// <summary>
+        /// Get the cached user role by user primary key, with cache-first logic.
+        /// On a cache miss, falls back to the database and populates the cache.
+        /// Returns null if the user is not found.
+        /// The cache service ensures Redis unavailability never propagates exceptions.
+        /// </summary>
+        /// <param name="userPK">User primary key</param>
+        /// <returns>Cached or database-fetched role, or null if user not found</returns>
+        Task<CachedUserRole?> GetRoleAsync(Guid userPK);
     }
 }
