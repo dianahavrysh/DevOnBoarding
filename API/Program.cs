@@ -1,11 +1,13 @@
 using Common;
 using Common.Auth;
+using Common.Auth.Authorization;
+using Common.Auth.Jwt;
 using Common.Enums;
 using Common.Interfaces;
 using DataLayer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,8 +15,6 @@ using Microsoft.IdentityModel.Tokens;
 using Services.Auth;
 using System;
 using System.Text;
-using Common.Auth.Jwt;
-using Common.Auth.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,7 +40,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidAudience = jwtOptions.Audience,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret)),
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtOptions.Secret)),
             ValidateLifetime = true
         };
     });
@@ -55,11 +56,19 @@ builder.Services.AddScoped<ConnectionContext>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     var dbTypeString = configuration.GetValue<string>("DbType") ?? "MSSQL";
-    var dbType = Enum.TryParse<DbType>(dbTypeString, true, out var parsed) ? parsed : DbType.MSSQL;
+    var dbType = Enum.TryParse<DbType>(dbTypeString, true, out var parsed)
+        ? parsed
+        : DbType.MSSQL;
+
     var connectionString = dbType == DbType.MSSQL
         ? configuration.GetConnectionString("MSSQL")
         : configuration.GetConnectionString("MySQL");
-    return new ConnectionContext { DbType = dbType, ConnectionString = connectionString! };
+
+    return new ConnectionContext
+    {
+        DbType = dbType,
+        ConnectionString = connectionString!
+    };
 });
 
 builder.Services.AddScoped<IDatabaseFactory, DatabaseFactory>();
@@ -67,7 +76,9 @@ builder.Services.AddScoped<IDatabaseFactory, DatabaseFactory>();
 builder.Services.AddScoped<IUsersManager, DAL.UsersDbManager>();
 builder.Services.AddScoped<IUsersService, Services.UsersService>();
 
-builder.Services.AddAutoMapper(cfg => { }, typeof(Services.Mappers.UserMappingProfile).Assembly);
+builder.Services.AddAutoMapper(
+    cfg => { },
+    typeof(Services.Mappers.UserMappingProfile).Assembly);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

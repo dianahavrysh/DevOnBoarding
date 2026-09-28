@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Common.Entities;
 
-namespace Common.Interfaces {
+namespace Common.Interfaces
+{
     /// <summary>
     /// Manager interface for user operations.
     /// </summary>
-    public interface IUsersManager {
+    public interface IUsersManager
+    {
         /// <summary>
         /// Get a user entity by primary key asynchronously.
         /// </summary>

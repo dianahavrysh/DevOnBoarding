@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Common;
 using Common.Database;
 using Common.Entities;
-using Common.Extensions;
 using Common.Interfaces;
 
 namespace DAL;
@@ -14,15 +13,18 @@ namespace DAL;
 /// <summary>
 /// Database manager for user operations.
 /// </summary>
-public class UsersDbManager : BaseDbManager, IUsersManager {
+public class UsersDbManager : BaseDbManager, IUsersManager
+{
     public UsersDbManager(
         IDatabaseFactory factory,
         ConnectionContext connectionContext)
-        : base(factory, connectionContext) {
+        : base(factory, connectionContext)
+    {
     }
 
     /// <inheritdoc />
-    public async Task<Guid> InsertAsync(User user) {
+    public async Task<Guid> InsertAsync(User user)
+    {
         var newUserPK = CreateOutputParam(
             "NewUserPK",
             DbType.Guid);
@@ -34,7 +36,8 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
             StoreProcedureNames.UsersInsert,
             parameters);
 
-        if (newUserPK.Value is not Guid userPK || userPK == Guid.Empty) {
+        if (newUserPK.Value is not Guid userPK || userPK == Guid.Empty)
+        {
             throw new InvalidOperationException(
                 "Users_INS did not return the created user's primary key.");
         }
@@ -43,7 +46,8 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
     }
 
     /// <inheritdoc />
-    public async Task<bool> UpdateAsync(User user) {
+    public async Task<bool> UpdateAsync(User user)
+    {
         var found = CreateOutputParam(
             "Found",
             DbType.Boolean);
@@ -59,11 +63,12 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Guid userPK) {
+    public async Task DeleteAsync(Guid userPK)
+    {
         var parameters = new List<IDataParameter>
         {
-                CreateParam(nameof(User.UserPK), userPK)
-            };
+            CreateParam(nameof(User.UserPK), userPK)
+        };
 
         await ExecuteNonQueryAsync(
             StoreProcedureNames.UsersDelete,
@@ -71,19 +76,21 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
     }
 
     /// <inheritdoc />
-    public async Task<User?> GetByPKAsync(Guid userPK) {
+    public async Task<User?> GetByPKAsync(Guid userPK)
+    {
         var user = new User();
 
         var parameters = new List<IDataParameter>
         {
-                CreateParam(nameof(User.UserPK), userPK)
-            };
+            CreateParam(nameof(User.UserPK), userPK)
+        };
 
         using var reader = await ExecuteReaderAsync(
             StoreProcedureNames.UsersSelectByPK,
             parameters);
 
-        if (await reader.ReadAsync()) {
+        if (await reader.ReadAsync())
+        {
             user = PopulateUser(reader);
         }
 
@@ -91,19 +98,21 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
     }
 
     /// <inheritdoc />
-    public async Task<User?> GetByEmailAsync(string email) {
+    public async Task<User?> GetByEmailAsync(string email)
+    {
         var user = new User();
 
         var parameters = new List<IDataParameter>
         {
-                CreateParam(nameof(User.Email), email)
-            };
+            CreateParam(nameof(User.Email), email)
+        };
 
         using var reader = await ExecuteReaderAsync(
             StoreProcedureNames.UsersSelectByEmail,
             parameters);
 
-        if (await reader.ReadAsync()) {
+        if (await reader.ReadAsync())
+        {
             user = PopulateUser(reader);
         }
 
@@ -112,34 +121,35 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
 
     /// <inheritdoc />
     public async Task<(List<User> Items, int TotalRows)> GetByPageAsync(
-        byte RequestingRolePK,
-        int CurrentPage,
-        int PageSize,
-        string? SortExpression,
-        string? SearchValue,
-        bool SearchByUserName,
-        bool SearchByEmail,
-        bool SearchByFirstName,
-        bool SearchBySecondName,
-        bool IncludeInactive,
-        bool StrictMatch) {
+        byte requestingRolePK,
+        int currentPage,
+        int pageSize,
+        string? sortExpression,
+        string? searchValue,
+        bool searchByUserName,
+        bool searchByEmail,
+        bool searchByFirstName,
+        bool searchBySecondName,
+        bool includeInactive,
+        bool strictMatch)
+    {
         var users = new List<User>();
         var totalRows = 0;
 
         var parameters = new List<IDataParameter>
         {
-        CreateParam(nameof(RequestingRolePK), RequestingRolePK),
-        CreateParam(nameof(CurrentPage), CurrentPage),
-        CreateParam(nameof(PageSize), PageSize),
-        CreateParam(nameof(SortExpression), SortExpression),
-        CreateParam(nameof(SearchValue), SearchValue),
-        CreateParam(nameof(SearchByUserName), SearchByUserName),
-        CreateParam(nameof(SearchByEmail), SearchByEmail),
-        CreateParam(nameof(SearchByFirstName), SearchByFirstName),
-        CreateParam(nameof(SearchBySecondName), SearchBySecondName),
-        CreateParam(nameof(IncludeInactive), IncludeInactive),
-        CreateParam(nameof(StrictMatch), StrictMatch)
-    };
+            CreateParam(nameof(requestingRolePK), requestingRolePK),
+            CreateParam(nameof(currentPage), currentPage),
+            CreateParam(nameof(pageSize), pageSize),
+            CreateParam(nameof(sortExpression), sortExpression),
+            CreateParam(nameof(searchValue), searchValue),
+            CreateParam(nameof(searchByUserName), searchByUserName),
+            CreateParam(nameof(searchByEmail), searchByEmail),
+            CreateParam(nameof(searchByFirstName), searchByFirstName),
+            CreateParam(nameof(searchBySecondName), searchBySecondName),
+            CreateParam(nameof(includeInactive), includeInactive),
+            CreateParam(nameof(strictMatch), strictMatch)
+        };
 
         using var reader = await ExecuteReaderAsync(
             StoreProcedureNames.UsersSelectByPage,
@@ -147,8 +157,10 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
 
         var totalRowsSet = false;
 
-        while (await reader.ReadAsync()) {
-            if (!totalRowsSet) {
+        while (await reader.ReadAsync())
+        {
+            if (!totalRowsSet)
+            {
                 totalRows = reader.GetValue("TotalRows", 0);
                 totalRowsSet = true;
             }
@@ -164,8 +176,10 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
     /// using the <see cref="DataReaderExtensions.GetValue{T}"/> helpers.
     /// Shared by <see cref="GetByPKAsync"/> and <see cref="GetByPageAsync"/>.
     /// </summary>
-    private static User PopulateUser(DbDataReader reader) {
-        return new User {
+    private static User PopulateUser(DbDataReader reader)
+    {
+        return new User
+        {
             UserPK = reader.GetValue(nameof(User.UserPK), Guid.Empty),
             UserName = reader.GetValue(nameof(User.UserName), string.Empty),
             Email = reader.GetValue(nameof(User.Email), string.Empty),
@@ -174,31 +188,57 @@ public class UsersDbManager : BaseDbManager, IUsersManager {
             RolePK = reader.GetValue(nameof(User.RolePK), (byte)0),
             RoleName = reader.GetValue(nameof(User.RoleName), string.Empty),
             FirstName = reader.GetValue(nameof(User.FirstName), string.Empty),
-            SecondName = reader.GetValue<string?>(nameof(User.SecondName), null),
-            BirthDate = reader.GetValue<DateTime?>(nameof(User.BirthDate), null)
+            SecondName = reader.GetValue<string?>(
+                nameof(User.SecondName),
+                null),
+            BirthDate = reader.GetValue<DateTime?>(
+                nameof(User.BirthDate),
+                null)
         };
     }
 
     /// <summary>
     /// Builds the shared set of parameters used by both <see cref="InsertAsync"/> and
-    /// <see cref="UpdateAsync"/>, to avoid repeating the same eight parameters twice.
+    /// <see cref="UpdateAsync"/>, to avoid repeating the same parameters twice.
     /// The output parameter (NewUserPK / Found) is added by the caller.
     /// </summary>
-    private List<IDataParameter> BuildUserParameters(User user, bool includeUserPK) {
+    private List<IDataParameter> BuildUserParameters(
+        User user,
+        bool includeUserPK)
+    {
         var parameters = new List<IDataParameter>();
 
-        if (includeUserPK) {
-            parameters.Add(CreateParam(nameof(User.UserPK), user.UserPK));
+        if (includeUserPK)
+        {
+            parameters.Add(CreateParam(
+                nameof(User.UserPK),
+                user.UserPK));
         }
 
-        parameters.Add(CreateParam(nameof(User.UserName), user.UserName));
-        parameters.Add(CreateParam(nameof(User.Email), user.Email));
-        parameters.Add(CreateParam(nameof(User.Password), user.Password));
-        parameters.Add(CreateParam(nameof(User.ActiveStatus), user.ActiveStatus));
-        parameters.Add(CreateParam(nameof(User.RolePK), user.RolePK));
-        parameters.Add(CreateParam(nameof(User.FirstName), user.FirstName));
-        parameters.Add(CreateParam(nameof(User.SecondName), user.SecondName));
-        parameters.Add(CreateParam(nameof(User.BirthDate), user.BirthDate));
+        parameters.Add(CreateParam(
+            nameof(User.UserName),
+            user.UserName));
+        parameters.Add(CreateParam(
+            nameof(User.Email),
+            user.Email));
+        parameters.Add(CreateParam(
+            nameof(User.Password),
+            user.Password));
+        parameters.Add(CreateParam(
+            nameof(User.ActiveStatus),
+            user.ActiveStatus));
+        parameters.Add(CreateParam(
+            nameof(User.RolePK),
+            user.RolePK));
+        parameters.Add(CreateParam(
+            nameof(User.FirstName),
+            user.FirstName));
+        parameters.Add(CreateParam(
+            nameof(User.SecondName),
+            user.SecondName));
+        parameters.Add(CreateParam(
+            nameof(User.BirthDate),
+            user.BirthDate));
 
         return parameters;
     }

@@ -11,35 +11,29 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-/// <summary>
-/// API controller exposing user-related endpoints.
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class UsersController : ControllerBase {
+public class UsersController : ControllerBase
+{
     private readonly IUsersService _service;
     private readonly ITokenClaimsService _tokenClaimsService;
 
-    /// <summary>
-    /// Creates a new <see cref="UsersController"/>.
-    /// </summary>
     public UsersController(
         IUsersService service,
-        ITokenClaimsService tokenClaimsService) {
+        ITokenClaimsService tokenClaimsService)
+    {
         _service = service;
         _tokenClaimsService = tokenClaimsService;
     }
 
-    /// <summary>
-    /// Get a user by primary key.
-    /// </summary>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(UserDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetByPK(Guid id) {
+    public async Task<IActionResult> GetByPK(Guid id)
+    {
         var dto = await _service.GetByPKAsync(id);
 
         return dto is null
@@ -47,9 +41,6 @@ public class UsersController : ControllerBase {
             : Ok(dto);
     }
 
-    /// <summary>
-    /// Get a paginated list of users.
-    /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -64,13 +55,15 @@ public class UsersController : ControllerBase {
         bool searchByFirstName,
         bool searchBySecondName,
         bool includeInactive,
-        bool strictMatch) {
+        bool strictMatch)
+    {
         var requestingUserRole =
             _tokenClaimsService.GetRoleFromPrincipal(User);
 
         if (!RoleExtensions.TryParseRole(
             requestingUserRole,
-            out var requestingRole)) {
+            out var requestingRole))
+        {
             return Forbid();
         }
 
@@ -92,9 +85,6 @@ public class UsersController : ControllerBase {
         return Ok(new { items, totalRows });
     }
 
-    /// <summary>
-    /// Create a new user.
-    /// </summary>
     [HttpPost]
     [UserAccess(UserOperation.Create)]
     [ProducesResponseType(typeof(UserDTO), StatusCodes.Status201Created)]
@@ -102,7 +92,8 @@ public class UsersController : ControllerBase {
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create(
-        [FromBody] UserCreateUpdateDTO dto) {
+        [FromBody] UserCreateUpdateDTO dto)
+    {
         var created = await _service.CreateAsync(dto);
 
         return CreatedAtAction(
@@ -111,9 +102,6 @@ public class UsersController : ControllerBase {
             created);
     }
 
-    /// <summary>
-    /// Update an existing user.
-    /// </summary>
     [HttpPut]
     [UserAccess(UserOperation.Edit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -121,7 +109,8 @@ public class UsersController : ControllerBase {
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Update(
-        [FromBody] UserCreateUpdateDTO dto) {
+        [FromBody] UserCreateUpdateDTO dto)
+    {
         var updated = await _service.UpdateAsync(dto);
 
         return updated
@@ -129,16 +118,14 @@ public class UsersController : ControllerBase {
             : NotFound();
     }
 
-    /// <summary>
-    /// Delete the user identified by the specified primary key.
-    /// </summary>
     [HttpDelete("{id}")]
     [UserAccess(UserOperation.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Delete(Guid id) {
+    public async Task<IActionResult> Delete(Guid id)
+    {
         await _service.DeleteAsync(id);
 
         return NoContent();
