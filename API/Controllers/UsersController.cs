@@ -17,14 +17,10 @@ namespace API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUsersService _service;
-    private readonly ITokenClaimsService _tokenClaimsService;
 
-    public UsersController(
-        IUsersService service,
-        ITokenClaimsService tokenClaimsService)
+    public UsersController(IUsersService service)
     {
         _service = service;
-        _tokenClaimsService = tokenClaimsService;
     }
 
     [HttpGet("{id}")]
@@ -55,22 +51,8 @@ public class UsersController : ControllerBase
         bool searchByFirstName,
         bool searchBySecondName,
         bool includeInactive,
-        bool strictMatch)
-    {
-        var requestingUserRole =
-            _tokenClaimsService.GetRoleFromPrincipal(User);
-
-        if (!RoleExtensions.TryParseRole(
-            requestingUserRole,
-            out var requestingRole))
-        {
-            return Forbid();
-        }
-
-        var requestingRolePK = (byte)requestingRole;
-
+        bool strictMatch) {
         var (items, totalRows) = await _service.GetByPageAsync(
-            requestingRolePK,
             currentPage,
             pageSize,
             sortExpression,

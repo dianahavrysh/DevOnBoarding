@@ -8,108 +8,58 @@ using Microsoft.Extensions.Logging;
 namespace Common.Caching;
 
 /// <summary>
-/// Redis-backed implementation of IUserRoleCacheService with graceful fallback on errors.
-/// If Redis is unavailable for any reason, operations fail silently (logged as warnings).
+/// Redis-backed role cache. Redis failures never propagate: they are logged and treated as a miss.
 /// </summary>
-public class RedisUserRoleCacheService : IUserRoleCacheService
-{
+public class RedisUserRoleCacheService : IUserRoleCacheService {
+    private const string KeyPrefix = "user:role:";
+    private static readonly TimeSpan Expiration = TimeSpan.FromMinutes(15);
+
     private readonly IDistributedCache _cache;
     private readonly ILogger<RedisUserRoleCacheService> _logger;
 
-    /// <summary>
-    /// Cache key prefix for user roles.
-    /// </summary>
-    private const string CacheKeyPrefix = "user:role:";
-
-    /// <summary>
-    /// Absolute expiration time for cached roles (15 minutes).
-    /// </summary>
-    private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(15);
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RedisUserRoleCacheService"/> class.
-    /// </summary>
     public RedisUserRoleCacheService(
         IDistributedCache cache,
-        ILogger<RedisUserRoleCacheService> logger)
-    {
+        ILogger<RedisUserRoleCacheService> logger) {
         _cache = cache;
         _logger = logger;
     }
 
-    /// <inheritdoc />
-    public async Task<CachedUserRole?> GetAsync(Guid userPK)
-    {
-        try
-        {
-            var cacheKey = FormatCacheKey(userPK);
-            var cachedJson = await _cache.GetStringAsync(cacheKey);
+    public async Task<CachedUserRole?> GetAsync(Guid userPK) {
+        try {
+            var json = await _cache.GetStringAsync(Key(userPK));
 
-            if (cachedJson == null)
-            {
-                return null;
-            }
-
-            var cachedRole = JsonSerializer.Deserialize<CachedUserRole>(cachedJson);
-            _logger.LogDebug("Cache hit for user {UserId}", userPK);
-            return cachedRole;
+            return json is null
+                ? null
+                : JsonSerializer.Deserialize<CachedUserRole>(json);
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(
-                ex,
-                "Error retrieving cached role for user {UserId}. Treating as cache miss.",
-                userPK);
+        catch (Exception ex) {
+            _logger.LogWarning(ex, "Cache read failed for user {UserPK}; treating as miss.", userPK);
             return null;
         }
     }
 
-    /// <inheritdoc />
-    public async Task SetAsync(Guid userPK, CachedUserRole role)
-    {
-        try
-        {
-            var cacheKey = FormatCacheKey(userPK);
-            var json = JsonSerializer.Serialize(role);
-
-            var options = new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = CacheExpiration
-            };
-
-            await _cache.SetStringAsync(cacheKey, json, options);
-            _logger.LogDebug("Cached role for user {UserId}: {RoleName}", userPK, role.RoleName);
+    public async Task SetAsync(Guid userPK, CachedUserRole role) {
+        try {
+            await _cache.SetStringAsync(
+                Key(userPK),
+                JsonSerializer.Serialize(role),
+                new DistributedCacheEntryOptions {
+                    AbsoluteExpirationRelativeToNow = Expiration
+                });
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(
-                ex,
-                "Error storing cached role for user {UserId}. Cache operation skipped; database fallback will be used.",
-                userPK);
+        catch (Exception ex) {
+            _logger.LogWarning(ex, "Cache write failed for user {UserPK}.", userPK);
         }
     }
 
-    /// <inheritdoc />
-    public async Task InvalidateAsync(Guid userPK)
-    {
-        try
-        {
-            var cacheKey = FormatCacheKey(userPK);
-            await _cache.RemoveAsync(cacheKey);
-            _logger.LogDebug("Invalidated cache for user {UserId}", userPK);
+    public async Task InvalidateAsync(Guid userPK) {
+        try {
+            await _cache.RemoveAsync(Key(userPK));
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(
-                ex,
-                "Error invalidating cached role for user {UserId}. Cache operation skipped; new cache will be populated on next read.",
-                userPK);
+        catch (Exception ex) {
+            _logger.LogWarning(ex, "Cache invalidation failed for user {UserPK}.", userPK);
         }
     }
 
-    /// <summary>
-    /// Formats the cache key for a user role.
-    /// </summary>
-    private static string FormatCacheKey(Guid userPK) =>
-        $"{CacheKeyPrefix}{userPK}";
+    private static string Key(Guid userPK) => $"{KeyPrefix}{userPK}";
 }

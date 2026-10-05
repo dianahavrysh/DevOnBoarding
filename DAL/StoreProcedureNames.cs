@@ -8,4 +8,5 @@ internal static class StoreProcedureNames
     public const string UsersSelectByPK = "Users_SEL_ByPK";
     public const string UsersSelectByEmail = "Users_SEL_ByEmail";
     public const string UsersSelectByPage = "Users_SEL_ByPage";
+    public const string UsersSelectRoleByPK = "Users_SEL_RoleByPK";
 }

@@ -1,21 +1,23 @@
-using Common;
+using API.Middleware;
 using Common.Auth;
+using Common.Auth.Authorization;
+using Common.Auth.Jwt;
 using Common.Caching;
+using Common.Contexts;
 using Common.Enums;
 using Common.Interfaces;
 using DataLayer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using Services;
 using Services.Auth;
 using System;
 using System.Text;
-using Common.Auth.Jwt;
-using Common.Auth.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,7 +46,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-
 builder.Services.AddScoped<IAuthorizationHandler, UserAccessHandler>();
 
 builder.Services.AddAuthServices();
@@ -71,7 +72,7 @@ builder.Services.AddStackExchangeRedisCache(options => {
 builder.Services.AddScoped<IUserRoleCacheService, RedisUserRoleCacheService>();
 
 builder.Services.AddScoped<IUsersManager, DAL.UsersDbManager>();
-builder.Services.AddScoped<IUsersService, Services.UsersService>();
+builder.Services.AddUserServices(); 
 
 builder.Services.AddAutoMapper(cfg => { }, typeof(Services.Mappers.UserMappingProfile).Assembly);
 
@@ -86,10 +87,14 @@ if (app.Environment.IsDevelopment()) {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else {
+    app.UseMiddleware<ExceptionLoggingMiddleware>();
+}
 
 app.UseRouting();
 
 app.UseAuthentication();
+app.UseMiddleware<UserCachingMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

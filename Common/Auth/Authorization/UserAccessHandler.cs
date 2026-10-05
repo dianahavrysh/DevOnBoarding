@@ -1,146 +1,78 @@
 using System;
-using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
-using Common.Caching;
+using Common.Contexts;
 using Common.DTOs;
 using Common.Enums;
 using Common.Extensions;
-using Common.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 
 namespace Common.Auth.Authorization;
 
 /// <summary>
-/// Authorization handler for evaluating user access to perform specific operations.
+/// Evaluates whether the current user (from <see cref="ServerContext"/>)
+/// may perform the requested operation on the target user.
 /// </summary>
 public sealed class UserAccessHandler
     : AuthorizationHandler<UserAccessRequirement, TargetUserInfo> {
     private readonly ILogger<UserAccessHandler> _logger;
-    private readonly IUsersService _usersService;
 
-    /// <summary>
-    /// Creates a new instance of the <see cref="UserAccessHandler"/> class.
-    /// </summary>
-    /// <param name="logger"></param>
-    /// <param name="usersService"></param>
-    public UserAccessHandler(
-        ILogger<UserAccessHandler> logger,
-        IUsersService usersService) {
+    public UserAccessHandler(ILogger<UserAccessHandler> logger) {
         _logger = logger;
-        _usersService = usersService;
     }
 
-    /// <summary>
-    /// Handles the authorization requirement for user access.
-    /// </summary>
-    /// <param name="context"></param>
-    /// <param name="requirement"></param>
-    /// <param name="target"></param>
-    /// <returns></returns>
-    protected override async Task HandleRequirementAsync(
+    protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         UserAccessRequirement requirement,
         TargetUserInfo target) {
-        var requesterId = Guid.TryParse(
-            context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
-            out var id)
-                ? id
-                : Guid.Empty;
-
-        CachedUserRole? requesterCachedRole = null;
-        try {
-            requesterCachedRole = await _usersService.GetRoleAsync(requesterId);
-        }
-        catch (Exception ex) {
-            _logger.LogError(
-                ex,
-                "Error retrieving cached role for requester {RequesterId}. Attempting JWT fallback.",
-                requesterId);
+        if (!ServerContext.IsAuthenticated) {
+            _logger.LogWarning("Authorization denied: ServerContext is not initialized.");
+            return Task.CompletedTask;
         }
 
-        Role? requesterRole = null;
-
-        if (requesterCachedRole != null) {
-            if (!RoleExtensions.TryParseRole(requesterCachedRole.RoleName, out var parsedRole)) {
-                _logger.LogWarning(
-                    "Cached role name '{RoleName}' for user {UserId} is invalid. Access denied.",
-                    requesterCachedRole.RoleName,
-                    requesterId);
-                return;
-            }
-            requesterRole = parsedRole;
-            _logger.LogDebug(
-                "Using cached role '{RoleName}' for user {UserId}",
-                requesterCachedRole.RoleName,
-                requesterId);
-        }
-        else {
-            var requesterRoleString = context.User.FindFirst(ClaimTypes.Role)?.Value;
-            if (!RoleExtensions.TryParseRole(requesterRoleString, out var parsedRole)) {
-                _logger.LogWarning(
-                    "Invalid role '{InvalidRole}' in JWT claim for user {UserId}. Access denied.",
-                    requesterRoleString,
-                    requesterId);
-                return;
-            }
-            requesterRole = parsedRole;
-            _logger.LogDebug(
-                "No cached role found for user {UserId}; using JWT role '{RoleName}'",
-                requesterId,
-                requesterRoleString);
-        }
-
-        if (!Enum.IsDefined(typeof(Role), target.RolePK)) {
+        if (!Enum.IsDefined(typeof(Role), ServerContext.RolePK)) {
             _logger.LogWarning(
-                "Target user {TargetUserId} has invalid role id '{RolePK}' in database. Access denied.",
+                "Authorization denied: requester {RequesterId} has invalid role id {RolePK}.",
+                ServerContext.UserPK,
+                ServerContext.RolePK);
+            return Task.CompletedTask;
+        }
+
+        if (target.RoleEnum is not { } targetRole) {
+            _logger.LogWarning(
+                "Authorization denied: target {TargetUserId} has invalid role id {RolePK}.",
                 target.UserPK,
                 target.RolePK);
-
-            return;
+            return Task.CompletedTask;
         }
 
-        var targetRole = (Role)target.RolePK;
+        var requesterRole = (Role)ServerContext.RolePK;
 
         var canManageTargetRole =
             requesterRole == Role.Administrator
-            || (requesterRole == Role.Manager
-                && targetRole == Role.User);
+            || (requesterRole == Role.Manager && targetRole == Role.User);
 
-        var isSelf =
-            requesterId == target.UserPK;
+        var isSelf = ServerContext.UserPK == target.UserPK;
 
-        bool allowed = requirement.Operation switch {
-            UserOperation.View =>
-                RoleHierarchy.IsAtLeast(requesterRole.Value, targetRole),
-
-            UserOperation.Create =>
-                canManageTargetRole,
-
-            UserOperation.Edit =>
-                canManageTargetRole || isSelf,
-
-            UserOperation.Delete =>
-                canManageTargetRole || isSelf,
-
+        var allowed = requirement.Operation switch {
+            UserOperation.View => RoleHierarchy.IsAtLeast(requesterRole, targetRole),
+            UserOperation.Create => canManageTargetRole,
+            UserOperation.Edit => canManageTargetRole || isSelf,
+            UserOperation.Delete => canManageTargetRole || isSelf,
             _ => false
         };
 
-        if (allowed) {
-            _logger.LogInformation(
-                "Authorization granted: {Operation} on user {TargetUserId} by {RequesterRole}",
-                requirement.Operation,
-                target.UserPK,
-                requesterRole);
+        _logger.LogInformation(
+            "Authorization {Result}: {Operation} on user {TargetUserId} by {RequesterRole}",
+            allowed ? "granted" : "denied",
+            requirement.Operation,
+            target.UserPK,
+            requesterRole);
 
+        if (allowed) {
             context.Succeed(requirement);
         }
-        else {
-            _logger.LogInformation(
-                "Authorization denied: {Operation} on user {TargetUserId} by {RequesterRole}",
-                requirement.Operation,
-                target.UserPK,
-                requesterRole);
-        }
+
+        return Task.CompletedTask;
     }
 }

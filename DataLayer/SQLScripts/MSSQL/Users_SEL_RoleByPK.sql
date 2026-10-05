@@ -1,0 +1,12 @@
+CREATE OR ALTER PROCEDURE dbo.Users_SEL_RoleByPK
+    @UserPK UNIQUEIDENTIFIER
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT RolePK
+    FROM dbo.Users
+    WHERE UserPK = @UserPK;
+END
+GO
+
