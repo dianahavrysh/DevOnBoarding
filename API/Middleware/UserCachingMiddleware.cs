@@ -8,9 +8,7 @@ using Microsoft.AspNetCore.Http;
 namespace API.Middleware;
 
 /// <summary>
-/// Resolves the authenticated user's role (cache first) and publishes it via ServerContext.
-/// Anonymous requests pass through untouched. Unknown or inactive users get 401.
-/// Must be placed after UseAuthentication and before UseAuthorization.
+/// Middleware that caches the current user's information for the duration of the request.
 /// </summary>
 public sealed class UserCachingMiddleware {
     private readonly RequestDelegate _next;
@@ -20,9 +18,10 @@ public sealed class UserCachingMiddleware {
     }
 
     public async Task InvokeAsync(
-        HttpContext context,
-        ITokenClaimsService claims,
-        IUserRoleProvider roles) {
+    HttpContext context,
+    ITokenClaimsService claims,
+    IUserRoleProvider roles,
+    CurrentUserContext currentUser) {
         if (context.User.Identity?.IsAuthenticated != true) {
             await _next(context);
             return;
@@ -36,8 +35,7 @@ public sealed class UserCachingMiddleware {
             return;
         }
 
-        using (ServerContext.Begin(userPK, role.Value)) {
-            await _next(context);
-        }
+        currentUser.Set(userPK, role.Value);
+        await _next(context);
     }
 }

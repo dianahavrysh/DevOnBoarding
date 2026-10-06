@@ -72,7 +72,10 @@ builder.Services.AddStackExchangeRedisCache(options => {
 builder.Services.AddScoped<IUserRoleCacheService, RedisUserRoleCacheService>();
 
 builder.Services.AddScoped<IUsersManager, DAL.UsersDbManager>();
-builder.Services.AddUserServices(); 
+builder.Services.AddUserServices();
+
+builder.Services.AddScoped<CurrentUserContext>();
+builder.Services.AddScoped<ICurrentUserContext>(sp => sp.GetRequiredService<CurrentUserContext>());
 
 builder.Services.AddAutoMapper(cfg => { }, typeof(Services.Mappers.UserMappingProfile).Assembly);
 
