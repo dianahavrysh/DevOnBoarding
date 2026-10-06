@@ -42,6 +42,6 @@ namespace Common.Interfaces {
         /// <summary>
         /// Delete the user identified by the specified primary key asynchronously.
         /// </summary>
-        Task DeleteAsync(Guid userPK);
+        Task<bool> DeleteAsync(Guid userPK);
     }
 }

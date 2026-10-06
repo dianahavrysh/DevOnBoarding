@@ -1,5 +1,6 @@
 using System;
 using Common.Enums;
+using Common.Extensions;
 
 namespace Common.DTOs;
 
@@ -12,7 +13,5 @@ public record TargetUserInfo(Guid UserPK, byte RolePK) {
     /// Returns null when the role id is not defined.
     /// </summary>
     public Role? RoleEnum =>
-        Enum.IsDefined(typeof(Role), RolePK)
-            ? (Role)RolePK
-            : null;
+        RoleExtensions.TryFromPK(RolePK, out var role) ? role : null;
 }

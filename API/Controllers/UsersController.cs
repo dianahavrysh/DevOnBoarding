@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using API.Attributes;
 using Common.DTOs;
 using Common.Enums;
-using Common.Extensions;
 using Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -14,22 +13,20 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class UsersController : ControllerBase
-{
+public class UsersController : ControllerBase {
     private readonly IUsersService _service;
 
-    public UsersController(IUsersService service)
-    {
+    public UsersController(IUsersService service) {
         _service = service;
     }
 
     [HttpGet("{id}")]
+    [UserAccess(UserOperation.View)]
     [ProducesResponseType(typeof(UserDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetByPK(Guid id)
-    {
+    public async Task<IActionResult> GetByPK(Guid id) {
         var dto = await _service.GetByPKAsync(id);
 
         return dto is null
@@ -74,8 +71,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create(
-        [FromBody] UserCreateUpdateDTO dto)
-    {
+        [FromBody] UserCreateUpdateDTO dto) {
         var created = await _service.CreateAsync(dto);
 
         return CreatedAtAction(
@@ -91,8 +87,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Update(
-        [FromBody] UserCreateUpdateDTO dto)
-    {
+        [FromBody] UserCreateUpdateDTO dto) {
         var updated = await _service.UpdateAsync(dto);
 
         return updated
@@ -106,8 +101,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Delete(Guid id)
-    {
+    public async Task<IActionResult> Delete(Guid id) {
         await _service.DeleteAsync(id);
 
         return NoContent();

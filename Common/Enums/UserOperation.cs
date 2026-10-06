@@ -23,5 +23,9 @@ public enum UserOperation {
     /// <summary>
     /// Represents the operation of deleting a user.
     /// </summary>
-    Delete
+    Delete,
+    /// <summary>
+    /// Represents the operation of assigning a role to a user.
+    /// </summary>
+    AssignRole
 }

@@ -29,16 +29,14 @@ public sealed class UserCachingMiddleware {
         }
 
         var userPK = claims.GetUserIdFromPrincipal(context.User);
-        var rolePK = userPK == Guid.Empty
-            ? null
-            : await roles.GetAsync(userPK);
+        var role = userPK == Guid.Empty ? null : await roles.GetRoleAsync(userPK);
 
-        if (rolePK is null) {
+        if (role is null) {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return;
         }
 
-        using (ServerContext.Begin(userPK, rolePK.Value)) {
+        using (ServerContext.Begin(userPK, role.Value)) {
             await _next(context);
         }
     }

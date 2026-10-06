@@ -66,7 +66,7 @@ namespace Common.Interfaces
         /// <summary>
         /// Delete a user by primary key asynchronously.
         /// </summary>
-        Task DeleteAsync(Guid userPK);
+        Task<bool> DeleteAsync(Guid userPK);
 
         /// <summary>
         /// Gets the role id of an active user without loading the whole user.

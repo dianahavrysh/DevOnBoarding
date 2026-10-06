@@ -80,8 +80,9 @@ public class UsersService : IUsersService {
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Guid userPK) {
-        await _manager.DeleteAsync(userPK);
+    public async Task<bool> DeleteAsync(Guid userPK) {
+        var deleted = await _manager.DeleteAsync(userPK);
         await _roleCache.InvalidateAsync(userPK);
+        return deleted;
     }
 }

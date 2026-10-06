@@ -1,14 +1,15 @@
 using System;
 using System.Threading.Tasks;
+using Common.Enums;
 
 namespace Common.Interfaces;
 /// <summary>
-/// Provides a way to retrieve the role id of an active user by their primary key.
+/// Provides a user's role for authorization purposes, using a cache-first approach with database fallback.
 /// </summary>
 public interface IUserRoleProvider {
     /// <summary>
-    /// Returns the role id of an active user (cache first, then database),
-    /// or null if the user does not exist or is inactive.
+    /// Returns the role of an active user (cache first, then database),
+    /// or null if the user does not exist, is inactive or has an unknown role.
     /// </summary>
-    Task<byte?> GetAsync(Guid userPK);
+    Task<Role?> GetRoleAsync(Guid userPK);
 }

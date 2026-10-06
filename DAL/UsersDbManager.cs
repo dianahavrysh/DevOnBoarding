@@ -64,16 +64,17 @@ public class UsersDbManager : BaseDbManager, IUsersManager
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Guid userPK)
-    {
+    public async Task<bool> DeleteAsync(Guid userPK) {
         var parameters = new List<IDataParameter>
         {
-            CreateParam(nameof(User.UserPK), userPK)
-        };
+        CreateParam(nameof(User.UserPK), userPK)
+    };
 
-        await ExecuteNonQueryAsync(
+        var affectedRows = await ExecuteNonQueryAsync(
             StoreProcedureNames.UsersDelete,
             parameters);
+
+        return affectedRows > 0;
     }
 
     /// <inheritdoc />
