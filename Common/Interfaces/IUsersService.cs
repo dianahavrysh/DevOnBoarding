@@ -17,7 +17,6 @@ namespace Common.Interfaces {
         /// Retrieve a paginated list of user DTOs asynchronously. Returns items and total rows.
         /// </summary>
         Task<(List<UserDTO> Items, int TotalRows)> GetByPageAsync(
-            byte requestingRolePK,
             int currentPage,
             int pageSize,
             string? sortExpression,
@@ -43,6 +42,6 @@ namespace Common.Interfaces {
         /// <summary>
         /// Delete the user identified by the specified primary key asynchronously.
         /// </summary>
-        Task DeleteAsync(Guid userPK);
+        Task<bool> DeleteAsync(Guid userPK);
     }
 }

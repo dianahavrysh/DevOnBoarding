@@ -1,85 +1,40 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using AutoMapper;
 using Common.DTOs;
 using Common.Entities;
 using Common.Interfaces;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Services;
-    /// <summary>
-    /// Application service that exposes user-related operations using DTOs for client consumption.
-    /// </summary>
-    public class UsersService : IUsersService {
-        private readonly IUsersManager _manager;
-        private readonly ILogger<UsersService> _logger;
-        private readonly IMapper _mapper;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UsersService"/> class.
-        /// </summary>
-        public UsersService(
-            IUsersManager manager,
-            ILogger<UsersService> logger,
-            IMapper mapper) {
-            _manager = manager;
-            _logger = logger;
-            _mapper = mapper;
-        }
+/// <summary>
+/// Application service exposing user operations as DTOs.
+/// Keeps the role cache consistent with changes made to users.
+/// </summary>
+public class UsersService : IUsersService {
+    private readonly IUsersManager _manager;
+    private readonly IUserRoleCacheService _roleCache;
+    private readonly ICurrentUserContext _currentUser;
+    private readonly IMapper _mapper;
 
-        /// <inheritdoc />
-        public async Task<UserDTO> CreateAsync(UserCreateUpdateDTO dto) {
-            try {
-                var user = _mapper.Map<User>(dto);
-                var userPK = await _manager.InsertAsync(user);
-
-                user.UserPK = userPK;
-
-                return _mapper.Map<UserDTO>(user);
-            }
-            catch (Exception ex) {
-                _logger.LogError(ex, "Error creating user");
-                throw;
-            }
-        }
-
-        /// <inheritdoc />
-        public async Task DeleteAsync(Guid userPK) {
-            try {
-                await _manager.DeleteAsync(userPK);
-            }
-            catch (Exception ex) {
-                _logger.LogError(
-                    ex,
-                    "Error deleting user {UserPK}",
-                    userPK);
-
-                throw;
-            }
-        }
-
-        /// <inheritdoc />
-        public async Task<UserDTO?> GetByPKAsync(Guid userPK) {
-            try {
-                var user = await _manager.GetByPKAsync(userPK);
-
-                return _mapper.Map<UserDTO>(user);
-            }
-            catch (Exception ex) {
-                _logger.LogError(
-                    ex,
-                    "Error getting user by PK {UserPK}",
-                    userPK);
-
-                throw;
-            }
-        }
+    public UsersService(
+        IUsersManager manager,
+        IUserRoleCacheService roleCache,
+        ICurrentUserContext currentUser,
+        IMapper mapper) {
+        _manager = manager;
+        _roleCache = roleCache;
+        _currentUser = currentUser;
+        _mapper = mapper;
+    }
 
     /// <inheritdoc />
+    public async Task<UserDTO?> GetByPKAsync(Guid userPK) =>
+        _mapper.Map<UserDTO?>(await _manager.GetByPKAsync(userPK));
+
     /// <inheritdoc />
     public async Task<(List<UserDTO> Items, int TotalRows)> GetByPageAsync(
-        byte requestingRolePK,
         int currentPage,
         int pageSize,
         string? sortExpression,
@@ -90,53 +45,46 @@ namespace Services;
         bool searchBySecondName,
         bool includeInactive,
         bool strictMatch) {
-        try {
-            var (items, total) = await _manager.GetByPageAsync(
-                requestingRolePK,
-                currentPage,
-                pageSize,
-                sortExpression,
-                searchValue,
-                searchByUserName,
-                searchByEmail,
-                searchByFirstName,
-                searchBySecondName,
-                includeInactive,
-                strictMatch);
+        var (items, totalRows) = await _manager.GetByPageAsync(
+            (byte)_currentUser.Role,
+            currentPage,
+            pageSize,
+            sortExpression,
+            searchValue,
+            searchByUserName,
+            searchByEmail,
+            searchByFirstName,
+            searchBySecondName,
+            includeInactive,
+            strictMatch);
 
-            return (
-                _mapper.Map<List<UserDTO>>(items),
-                total);
-        }
-        catch (Exception ex) {
-            _logger.LogError(
-                ex,
-                "Error getting users page " +
-                "(RequestingRolePK={RequestingRolePK}, " +
-                "Page={CurrentPage}, PageSize={PageSize})",
-                requestingRolePK,
-                currentPage,
-                pageSize);
+        return (_mapper.Map<List<UserDTO>>(items), totalRows);
+    }
 
-            throw;
-        }
+    /// <inheritdoc />
+    public async Task<UserDTO> CreateAsync(UserCreateUpdateDTO dto) {
+        var userPK = await _manager.InsertAsync(_mapper.Map<User>(dto));
+        var created = await _manager.GetByPKAsync(userPK);
+
+        return _mapper.Map<UserDTO>(created);
     }
 
     /// <inheritdoc />
     public async Task<bool> UpdateAsync(UserCreateUpdateDTO dto) {
-            try {
-                var user = _mapper.Map<User>(dto);
+        var updated = await _manager.UpdateAsync(_mapper.Map<User>(dto));
 
-                return await _manager.UpdateAsync(user);
-            }
-            catch (Exception ex) {
-                _logger.LogError(
-                    ex,
-                    "Error updating user {UserPK}",
-                    dto.UserPK);
-
-                throw;
-            }
+        if (updated) {
+            await _roleCache.InvalidateAsync(dto.UserPK);
         }
+
+        return updated;
     }
 
+    /// <inheritdoc />
+    public async Task<bool> DeleteAsync(Guid userPK) {
+        var deleted = await _manager.DeleteAsync(userPK);
+        await _roleCache.InvalidateAsync(userPK);
+
+        return deleted;
+    }
+}

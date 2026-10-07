@@ -1,9 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using API.Attributes;
+using API.Extensions;
 using Common.DTOs;
 using Common.Enums;
-using Common.Extensions;
 using Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -14,27 +14,21 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class UsersController : ControllerBase
-{
+public class UsersController : ControllerBase {
     private readonly IUsersService _service;
-    private readonly ITokenClaimsService _tokenClaimsService;
 
-    public UsersController(
-        IUsersService service,
-        ITokenClaimsService tokenClaimsService)
-    {
+    public UsersController(IUsersService service) {
         _service = service;
-        _tokenClaimsService = tokenClaimsService;
     }
 
     [HttpGet("{id}")]
+    [UserAccess(UserOperation.View)]
     [ProducesResponseType(typeof(UserDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetByPK(Guid id)
-    {
-        var dto = await _service.GetByPKAsync(id);
+    public async Task<IActionResult> GetByPK(Guid id) {
+        var dto = HttpContext.GetTargetUser() ?? await _service.GetByPKAsync(id);
 
         return dto is null
             ? NotFound()
@@ -55,22 +49,8 @@ public class UsersController : ControllerBase
         bool searchByFirstName,
         bool searchBySecondName,
         bool includeInactive,
-        bool strictMatch)
-    {
-        var requestingUserRole =
-            _tokenClaimsService.GetRoleFromPrincipal(User);
-
-        if (!RoleExtensions.TryParseRole(
-            requestingUserRole,
-            out var requestingRole))
-        {
-            return Forbid();
-        }
-
-        var requestingRolePK = (byte)requestingRole;
-
+        bool strictMatch) {
         var (items, totalRows) = await _service.GetByPageAsync(
-            requestingRolePK,
             currentPage,
             pageSize,
             sortExpression,
@@ -92,8 +72,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create(
-        [FromBody] UserCreateUpdateDTO dto)
-    {
+        [FromBody] UserCreateUpdateDTO dto) {
         var created = await _service.CreateAsync(dto);
 
         return CreatedAtAction(
@@ -109,8 +88,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Update(
-        [FromBody] UserCreateUpdateDTO dto)
-    {
+        [FromBody] UserCreateUpdateDTO dto) {
         var updated = await _service.UpdateAsync(dto);
 
         return updated
@@ -124,10 +102,8 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Delete(Guid id)
-    {
-        await _service.DeleteAsync(id);
+    public async Task<IActionResult> Delete(Guid id) {
 
-        return NoContent();
+        return await _service.DeleteAsync(id) ? NoContent() : NotFound();
     }
 }

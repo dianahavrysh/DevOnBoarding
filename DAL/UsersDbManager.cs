@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
-using Common;
 using Common.Database;
 using Common.Entities;
 using Common.Interfaces;
+using Common.Extensions;
+using Common.Contexts;
 
 namespace DAL;
 
@@ -63,60 +64,63 @@ public class UsersDbManager : BaseDbManager, IUsersManager
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Guid userPK)
-    {
+    public async Task<bool> DeleteAsync(Guid userPK) {
         var parameters = new List<IDataParameter>
         {
-            CreateParam(nameof(User.UserPK), userPK)
-        };
+        CreateParam(nameof(User.UserPK), userPK)
+    };
 
-        await ExecuteNonQueryAsync(
+        var affectedRows = await ExecuteNonQueryAsync(
             StoreProcedureNames.UsersDelete,
             parameters);
+
+        return affectedRows > 0;
     }
 
     /// <inheritdoc />
-    public async Task<User?> GetByPKAsync(Guid userPK)
-    {
-        var user = new User();
-
+    public async Task<User?> GetByPKAsync(Guid userPK) {
         var parameters = new List<IDataParameter>
         {
-            CreateParam(nameof(User.UserPK), userPK)
-        };
+        CreateParam(nameof(User.UserPK), userPK)
+    };
 
         using var reader = await ExecuteReaderAsync(
             StoreProcedureNames.UsersSelectByPK,
             parameters);
 
-        if (await reader.ReadAsync())
-        {
-            user = PopulateUser(reader);
-        }
-
-        return user;
+        return await reader.ReadAsync() ? PopulateUser(reader) : null;
     }
 
     /// <inheritdoc />
-    public async Task<User?> GetByEmailAsync(string email)
-    {
-        var user = new User();
-
+    public async Task<User?> GetByEmailAsync(string email) {
         var parameters = new List<IDataParameter>
         {
-            CreateParam(nameof(User.Email), email)
-        };
+        CreateParam(nameof(User.Email), email)
+    };
 
         using var reader = await ExecuteReaderAsync(
             StoreProcedureNames.UsersSelectByEmail,
             parameters);
 
-        if (await reader.ReadAsync())
+        return await reader.ReadAsync() ? PopulateUser(reader) : null;
+    }
+
+    /// <inheritdoc />
+    public async Task<byte?> GetRoleByPKAsync(Guid userPK) {
+        var parameters = new List<IDataParameter>
         {
-            user = PopulateUser(reader);
+        CreateParam(nameof(User.UserPK), userPK)
+    };
+
+        using var reader = await ExecuteReaderAsync(
+            StoreProcedureNames.UsersSelectRoleByPK,
+            parameters);
+
+        if (!await reader.ReadAsync()) {
+            return null;
         }
 
-        return user;
+        return reader.GetValue(nameof(User.RolePK), (byte)0);
     }
 
     /// <inheritdoc />

@@ -1,110 +1,78 @@
-using System;
-using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
 using Common.DTOs;
 using Common.Enums;
-using Common.Extensions;
+using Common.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 
 namespace Common.Auth.Authorization;
 
 /// <summary>
-/// Authorization handler for evaluating user access to perform specific operations.
+/// Evaluates whether the current user (from <see cref="ICurrentUserContext"/>)
+/// may perform the requested operation on the target user.
 /// </summary>
 public sealed class UserAccessHandler
     : AuthorizationHandler<UserAccessRequirement, TargetUserInfo> {
+    private readonly ICurrentUserContext _currentUser;
     private readonly ILogger<UserAccessHandler> _logger;
 
     /// <summary>
-    /// Creates a new instance of the <see cref="UserAccessHandler"/> class.
+    /// Initializes a new instance of the <see cref="UserAccessHandler"/> class.
     /// </summary>
-    /// <param name="logger"></param>
-    public UserAccessHandler(ILogger<UserAccessHandler> logger) {
+    /// <param name="currentUser">The user who issued the current request.</param>
+    /// <param name="logger">Logger.</param>
+    public UserAccessHandler(
+        ICurrentUserContext currentUser,
+        ILogger<UserAccessHandler> logger) {
+        _currentUser = currentUser;
         _logger = logger;
     }
 
     /// <summary>
-    /// Handles the authorization requirement for user access.
+    /// Determines whether the current user may perform the operation on the target user.
     /// </summary>
-    /// <param name="context"></param>
-    /// <param name="requirement"></param>
-    /// <param name="target"></param>
-    /// <returns></returns>
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         UserAccessRequirement requirement,
         TargetUserInfo target) {
-        var requesterRoleString =
-            context.User.FindFirst(ClaimTypes.Role)?.Value;
 
-        var requesterId = Guid.TryParse(
-            context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
-            out var id)
-                ? id
-                : Guid.Empty;
-
-        if (!RoleExtensions.TryParseRole(
-                requesterRoleString,
-                out var requesterRole)) {
-            _logger.LogWarning(
-                "Invalid role '{InvalidRole}' in JWT claim for user {UserId}. Access denied.",
-                requesterRoleString,
-                requesterId);
-
+        if (!_currentUser.IsInitialized) {
+            _logger.LogWarning("Authorization denied: current user context is not initialized.");
             return Task.CompletedTask;
         }
 
-        if (!Enum.IsDefined(typeof(Role), target.RoleId)) {
+        if (target.RoleEnum is not { } targetRole) {
             _logger.LogWarning(
-                "Target user {TargetUserId} has invalid role id '{RoleId}' in database. Access denied.",
-                target.UserPK,
-                target.RoleId);
-
+                "Authorization denied: target {TargetUserId} has invalid role id {RolePK}.",
+                target.UserPK, target.RolePK);
             return Task.CompletedTask;
         }
 
-        var targetRole = (Role)target.RoleId;
+        var requesterRole = _currentUser.Role;
 
         var canManageTargetRole =
             requesterRole == Role.Administrator
-            || (requesterRole == Role.Manager
-                && targetRole == Role.User);
+            || (requesterRole == Role.Manager && targetRole == Role.User);
 
-        var isSelf =
-            requesterId == target.UserPK;
+        var isSelf = _currentUser.UserPK == target.UserPK;
 
-        bool allowed = requirement.Operation switch {
-            UserOperation.View =>
-                RoleHierarchy.IsAtLeast(requesterRole, targetRole),
-
-            UserOperation.Create =>
-                canManageTargetRole,
-
-            UserOperation.Edit =>
-                canManageTargetRole || isSelf,
-
-            UserOperation.Delete =>
-                canManageTargetRole || isSelf,
-
+        var allowed = requirement.Operation switch {
+            UserOperation.View => RoleHierarchy.IsAtLeast(requesterRole, targetRole),
+            UserOperation.Create or UserOperation.AssignRole => canManageTargetRole,
+            UserOperation.Edit or UserOperation.Delete => canManageTargetRole || isSelf,
             _ => false
         };
 
         if (allowed) {
-            _logger.LogInformation(
+            _logger.LogDebug(
                 "Authorization granted: {Operation} on user {TargetUserId} by {RequesterRole}",
-                requirement.Operation,
-                target.UserPK,
-                requesterRole);
-
+                requirement.Operation, target.UserPK, requesterRole);
             context.Succeed(requirement);
         }
         else {
             _logger.LogInformation(
                 "Authorization denied: {Operation} on user {TargetUserId} by {RequesterRole}",
-                requirement.Operation,
-                target.UserPK,
-                requesterRole);
+                requirement.Operation, target.UserPK, requesterRole);
         }
 
         return Task.CompletedTask;
