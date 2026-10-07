@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using API.Attributes;
+using API.Extensions;
 using Common.DTOs;
 using Common.Enums;
 using Common.Interfaces;
@@ -27,7 +28,7 @@ public class UsersController : ControllerBase {
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetByPK(Guid id) {
-        var dto = await _service.GetByPKAsync(id);
+        var dto = HttpContext.GetTargetUser() ?? await _service.GetByPKAsync(id);
 
         return dto is null
             ? NotFound()
@@ -102,8 +103,7 @@ public class UsersController : ControllerBase {
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Delete(Guid id) {
-        await _service.DeleteAsync(id);
 
-        return NoContent();
+        return await _service.DeleteAsync(id) ? NoContent() : NotFound();
     }
 }

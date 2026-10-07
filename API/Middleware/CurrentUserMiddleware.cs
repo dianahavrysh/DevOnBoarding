@@ -10,10 +10,10 @@ namespace API.Middleware;
 /// <summary>
 /// Middleware that caches the current user's information for the duration of the request.
 /// </summary>
-public sealed class UserCachingMiddleware {
+public sealed class CurrentUserMiddleware {
     private readonly RequestDelegate _next;
 
-    public UserCachingMiddleware(RequestDelegate next) {
+    public CurrentUserMiddleware(RequestDelegate next) {
         _next = next;
     }
 

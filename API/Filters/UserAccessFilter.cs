@@ -68,8 +68,6 @@ public class UserAccessFilter : IAsyncActionFilter {
             return;
         }
 
-        // Role change on edit: the requester must also be allowed to assign the NEW role.
-        // Without this, a user could edit themselves and set RolePK = Administrator.
         if (_operation == UserOperation.Edit
             && TryGetDto(context, out var editDto)
             && editDto.RolePK != target.RolePK) {

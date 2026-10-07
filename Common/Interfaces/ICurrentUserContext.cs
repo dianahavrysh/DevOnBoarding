@@ -1,6 +1,7 @@
 using System;
 using Common.Enums;
 
+namespace Common.Interfaces;
 /// <summary>
 /// Represents the current user in the application, providing access to their primary key and role.
 /// </summary>

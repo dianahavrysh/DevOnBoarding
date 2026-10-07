@@ -97,7 +97,7 @@ else {
 app.UseRouting();
 
 app.UseAuthentication();
-app.UseMiddleware<UserCachingMiddleware>();
+app.UseMiddleware<CurrentUserMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

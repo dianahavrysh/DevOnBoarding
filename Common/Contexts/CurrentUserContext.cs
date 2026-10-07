@@ -1,6 +1,8 @@
 using System;
 using Common.Enums;
+using Common.Interfaces;
 
+namespace Common.Contexts;
 /// <inheritdoc />
 public sealed class CurrentUserContext : ICurrentUserContext {
     private (Guid UserPK, Role Role)? _value;
