@@ -17,6 +17,11 @@ public class RedisUserRoleCacheService : IUserRoleCacheService {
     private readonly IDistributedCache _cache;
     private readonly ILogger<RedisUserRoleCacheService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RedisUserRoleCacheService"/> class.
+    /// </summary>
+    /// <param name="cache">The distributed cache instance.</param>
+    /// <param name="logger">The logger instance.</param>
     public RedisUserRoleCacheService(
         IDistributedCache cache,
         ILogger<RedisUserRoleCacheService> logger) {
@@ -24,6 +29,11 @@ public class RedisUserRoleCacheService : IUserRoleCacheService {
         _logger = logger;
     }
 
+    /// <summary>
+    /// Gets the cached role for a user. If the cache read fails, it is logged and treated as a miss.
+    /// </summary>
+    /// <param name="userPK">The primary key of the user.</param>
+    /// <returns></returns>
     public async Task<CachedUserRole?> GetAsync(Guid userPK) {
         try {
             var json = await _cache.GetStringAsync(Key(userPK));
@@ -38,6 +48,9 @@ public class RedisUserRoleCacheService : IUserRoleCacheService {
         }
     }
 
+    /// <summary>
+    /// Sets the cached role for a user. If the cache write fails, it is logged and treated as a miss.
+    /// </summary>
     public async Task SetAsync(Guid userPK, CachedUserRole role) {
         try {
             await _cache.SetStringAsync(
@@ -52,6 +65,11 @@ public class RedisUserRoleCacheService : IUserRoleCacheService {
         }
     }
 
+    /// <summary>
+    /// Invalidates the cached role for a user. If the cache removal fails, it is logged and treated as a miss.
+    /// </summary>
+    /// <param name="userPK">The primary key of the user.</param>
+    /// <returns></returns>
     public async Task InvalidateAsync(Guid userPK) {
         try {
             await _cache.RemoveAsync(Key(userPK));

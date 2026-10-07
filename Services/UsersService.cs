@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
-using Common;
-using Common.Contexts;
 using Common.DTOs;
 using Common.Entities;
 using Common.Interfaces;
@@ -17,14 +15,17 @@ namespace Services;
 public class UsersService : IUsersService {
     private readonly IUsersManager _manager;
     private readonly IUserRoleCacheService _roleCache;
+    private readonly ICurrentUserContext _currentUser;
     private readonly IMapper _mapper;
 
     public UsersService(
         IUsersManager manager,
         IUserRoleCacheService roleCache,
+        ICurrentUserContext currentUser,
         IMapper mapper) {
         _manager = manager;
         _roleCache = roleCache;
+        _currentUser = currentUser;
         _mapper = mapper;
     }
 
@@ -45,7 +46,7 @@ public class UsersService : IUsersService {
         bool includeInactive,
         bool strictMatch) {
         var (items, totalRows) = await _manager.GetByPageAsync(
-            ServerContext.RolePK,
+            (byte)_currentUser.Role,
             currentPage,
             pageSize,
             sortExpression,
@@ -83,6 +84,7 @@ public class UsersService : IUsersService {
     public async Task<bool> DeleteAsync(Guid userPK) {
         var deleted = await _manager.DeleteAsync(userPK);
         await _roleCache.InvalidateAsync(userPK);
+
         return deleted;
     }
 }
