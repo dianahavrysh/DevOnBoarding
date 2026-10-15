@@ -1,11 +1,12 @@
 using Common.DTOs;
 using Common.Enums;
+using Common.Extensions;
 using Common.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace Common.Auth.Authorization;
+namespace Services.Authorization;
 
-public sealed class UserAccessChecker : IUserAccessChecker {
+internal sealed class UserAccessChecker : IUserAccessChecker {
     private readonly ICurrentUserContext _currentUser;
     private readonly ILogger<UserAccessChecker> _logger;
 

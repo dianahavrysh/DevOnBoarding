@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Common.Caching;
 using Common.Enums;
@@ -19,8 +20,8 @@ internal sealed class UserRoleProvider : IUserRoleProvider {
         _manager = manager;
     }
     /// <inheritdoc />
-    public async Task<Role?> GetRoleAsync(Guid userPK) {
-        var cached = await _cache.GetAsync(userPK);
+    public async Task<Role?> GetRoleAsync(Guid userPK, CancellationToken cancellationToken = default) {
+        var cached = await _cache.GetAsync(userPK, cancellationToken);
         if (cached is not null && RoleExtensions.TryFromPK(cached.RolePK, out var cachedRole)) {
             return cachedRole;
         }
@@ -30,7 +31,7 @@ internal sealed class UserRoleProvider : IUserRoleProvider {
             return null;
         }
 
-        await _cache.SetAsync(userPK, new CachedUserRole(value));
+        await _cache.SetAsync(userPK, new CachedUserRole(value), cancellationToken);
         return role;
     }
 }

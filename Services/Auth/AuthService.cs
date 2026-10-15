@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using AutoMapper;
-using Common.Caching;
 using Common.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -10,21 +8,15 @@ namespace Services.Auth;
 
 internal class AuthService : IAuthService {
     private readonly IUsersManager _usersManager;
-    private readonly IUserRoleCacheService _roleCache;
     private readonly IJwtTokenService _jwtTokenService;
-    private readonly IMapper _mapper;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IUsersManager usersManager,
-        IUserRoleCacheService roleCache,
         IJwtTokenService jwtTokenService,
-        IMapper mapper,
         ILogger<AuthService> logger) {
         _usersManager = usersManager;
-        _roleCache = roleCache;
         _jwtTokenService = jwtTokenService;
-        _mapper = mapper;
         _logger = logger;
     }
 
@@ -55,8 +47,6 @@ internal class AuthService : IAuthService {
             _logger.LogError("Authentication failed: User '{Username}' has no role assigned.", email);
             return null;
         }
-
-        await _roleCache.SetAsync(user.UserPK, _mapper.Map<CachedUserRole>(user));
 
         var claims = new List<Claim>
         {

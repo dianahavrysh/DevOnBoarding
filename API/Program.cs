@@ -1,7 +1,6 @@
 using API.Middleware;
 using Common.Auth;
 using Common.Auth.Jwt;
-using Common.Caching;
 using Common.Contexts;
 using Common.Enums;
 using Common.Interfaces;
@@ -59,17 +58,8 @@ builder.Services.AddScoped<ConnectionContext>(sp => {
 
 builder.Services.AddScoped<IDatabaseFactory, DatabaseFactory>();
 
-builder.Services.AddStackExchangeRedisCache(options => {
-    var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
-    if (!string.IsNullOrEmpty(redisConnectionString)) {
-        options.Configuration = redisConnectionString;
-    }
-});
-
-builder.Services.AddScoped<IUserRoleCacheService, RedisUserRoleCacheService>();
-
 builder.Services.AddScoped<IUsersManager, DAL.UsersDbManager>();
-builder.Services.AddUserServices();
+builder.Services.AddUserServices(builder.Configuration);
 
 builder.Services.AddScoped<CurrentUserContext>();
 builder.Services.AddScoped<ICurrentUserContext>(sp => sp.GetRequiredService<CurrentUserContext>());
@@ -100,3 +90,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+

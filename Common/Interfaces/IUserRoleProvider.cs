@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Common.Enums;
 
@@ -11,5 +12,7 @@ public interface IUserRoleProvider {
     /// Returns the role of an active user (cache first, then database),
     /// or null if the user does not exist, is inactive or has an unknown role.
     /// </summary>
-    Task<Role?> GetRoleAsync(Guid userPK);
+    /// <param name="userPK">The user's primary key.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    Task<Role?> GetRoleAsync(Guid userPK, CancellationToken cancellationToken = default);
 }
