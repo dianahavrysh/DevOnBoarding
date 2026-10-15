@@ -4,34 +4,48 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Common.DTOs;
 using Common.Entities;
+using Common.Enums;
 using Common.Interfaces;
 
 namespace Services;
 
 /// <summary>
 /// Application service exposing user operations as DTOs.
-/// Keeps the role cache consistent with changes made to users.
+/// Authorizes every operation against the current user and keeps the role cache consistent.
 /// </summary>
 public class UsersService : IUsersService {
     private readonly IUsersManager _manager;
     private readonly IUserRoleCacheService _roleCache;
     private readonly ICurrentUserContext _currentUser;
+    private readonly IUserAccessChecker _access;
     private readonly IMapper _mapper;
 
     public UsersService(
         IUsersManager manager,
         IUserRoleCacheService roleCache,
         ICurrentUserContext currentUser,
+        IUserAccessChecker access,
         IMapper mapper) {
         _manager = manager;
         _roleCache = roleCache;
         _currentUser = currentUser;
+        _access = access;
         _mapper = mapper;
     }
 
     /// <inheritdoc />
-    public async Task<UserDTO?> GetByPKAsync(Guid userPK) =>
-        _mapper.Map<UserDTO?>(await _manager.GetByPKAsync(userPK));
+    public async Task<OperationResult<UserDTO>> GetByPKAsync(Guid userPK) {
+        var user = await _manager.GetByPKAsync(userPK);
+        if (user is null) {
+            return OperationResult<UserDTO>.NotFound();
+        }
+
+        if (!_access.IsAllowed(ToTarget(user), UserOperation.View)) {
+            return OperationResult<UserDTO>.Forbidden();
+        }
+
+        return OperationResult<UserDTO>.Success(_mapper.Map<UserDTO>(user));
+    }
 
     /// <inheritdoc />
     public async Task<(List<UserDTO> Items, int TotalRows)> GetByPageAsync(
@@ -62,29 +76,63 @@ public class UsersService : IUsersService {
     }
 
     /// <inheritdoc />
-    public async Task<UserDTO> CreateAsync(UserCreateUpdateDTO dto) {
+    public async Task<OperationResult<UserDTO>> CreateAsync(UserCreateUpdateDTO dto) {
+        var target = new TargetUserInfo(Guid.Empty, dto.RolePK);
+        if (!_access.IsAllowed(target, UserOperation.Create)) {
+            return OperationResult<UserDTO>.Forbidden();
+        }
+
         var userPK = await _manager.InsertAsync(_mapper.Map<User>(dto));
         var created = await _manager.GetByPKAsync(userPK);
 
-        return _mapper.Map<UserDTO>(created);
+        return created is null
+            ? OperationResult<UserDTO>.NotFound()
+            : OperationResult<UserDTO>.Success(_mapper.Map<UserDTO>(created));
     }
 
     /// <inheritdoc />
-    public async Task<bool> UpdateAsync(UserCreateUpdateDTO dto) {
-        var updated = await _manager.UpdateAsync(_mapper.Map<User>(dto));
-
-        if (updated) {
-            await _roleCache.InvalidateAsync(dto.UserPK);
+    public async Task<OperationStatus> UpdateAsync(UserCreateUpdateDTO dto) {
+        var existing = await _manager.GetByPKAsync(dto.UserPK);
+        if (existing is null) {
+            return OperationStatus.NotFound;
         }
 
-        return updated;
+        var target = ToTarget(existing);
+        if (!_access.IsAllowed(target, UserOperation.Edit)) {
+            return OperationStatus.Forbidden;
+        }
+
+        // Role change: the requester must also be allowed to assign the NEW role.
+        if (dto.RolePK != existing.RolePK
+            && !_access.IsAllowed(target with { RolePK = dto.RolePK }, UserOperation.AssignRole)) {
+            return OperationStatus.Forbidden;
+        }
+
+        var updated = await _manager.UpdateAsync(_mapper.Map<User>(dto));
+        if (!updated) {
+            return OperationStatus.NotFound;
+        }
+
+        await _roleCache.InvalidateAsync(dto.UserPK);
+        return OperationStatus.Success;
     }
 
     /// <inheritdoc />
-    public async Task<bool> DeleteAsync(Guid userPK) {
+    public async Task<OperationStatus> DeleteAsync(Guid userPK) {
+        var existing = await _manager.GetByPKAsync(userPK);
+        if (existing is null) {
+            return OperationStatus.NotFound;
+        }
+
+        if (!_access.IsAllowed(ToTarget(existing), UserOperation.Delete)) {
+            return OperationStatus.Forbidden;
+        }
+
         var deleted = await _manager.DeleteAsync(userPK);
         await _roleCache.InvalidateAsync(userPK);
 
-        return deleted;
+        return deleted ? OperationStatus.Success : OperationStatus.NotFound;
     }
+
+    private static TargetUserInfo ToTarget(User user) => new(user.UserPK, user.RolePK);
 }

@@ -10,7 +10,7 @@ namespace Common.Interfaces;
 public interface IAuthService
 {
     /// <summary>
-    /// Authenticates a user based on username and password.
+    /// Authenticates a user based on email and password.
     /// Returns a JWT token if authentication succeeds.
     /// </summary>
     /// <param name="email">The user's email.</param>

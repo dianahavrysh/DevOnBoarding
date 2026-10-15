@@ -1,6 +1,5 @@
 using API.Middleware;
 using Common.Auth;
-using Common.Auth.Authorization;
 using Common.Auth.Jwt;
 using Common.Caching;
 using Common.Contexts;
@@ -8,7 +7,6 @@ using Common.Enums;
 using Common.Interfaces;
 using DataLayer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +44,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddScoped<IAuthorizationHandler, UserAccessHandler>();
 
 builder.Services.AddAuthServices();
 

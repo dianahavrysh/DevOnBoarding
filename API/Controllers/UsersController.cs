@@ -1,7 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using API.Attributes;
-using API.Extensions;
 using Common.DTOs;
 using Common.Enums;
 using Common.Interfaces;
@@ -22,17 +20,18 @@ public class UsersController : ControllerBase {
     }
 
     [HttpGet("{id}")]
-    [UserAccess(UserOperation.View)]
     [ProducesResponseType(typeof(UserDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetByPK(Guid id) {
-        var dto = HttpContext.GetTargetUser() ?? await _service.GetByPKAsync(id);
+        var result = await _service.GetByPKAsync(id);
 
-        return dto is null
-            ? NotFound()
-            : Ok(dto);
+        return result.Status switch {
+            OperationStatus.Success => Ok(result.Value),
+            OperationStatus.NotFound => NotFound(),
+            _ => Forbid()
+        };
     }
 
     [HttpGet]
@@ -66,44 +65,40 @@ public class UsersController : ControllerBase {
     }
 
     [HttpPost]
-    [UserAccess(UserOperation.Create)]
     [ProducesResponseType(typeof(UserDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Create(
-        [FromBody] UserCreateUpdateDTO dto) {
-        var created = await _service.CreateAsync(dto);
+    public async Task<IActionResult> Create([FromBody] UserCreateUpdateDTO dto) {
+        var result = await _service.CreateAsync(dto);
 
-        return CreatedAtAction(
-            nameof(GetByPK),
-            new { id = created.UserPK },
-            created);
+        return result.Status switch {
+            OperationStatus.Success => CreatedAtAction(
+                nameof(GetByPK), new { id = result.Value!.UserPK }, result.Value),
+            OperationStatus.NotFound => Problem(statusCode: StatusCodes.Status500InternalServerError),
+            _ => Forbid()
+        };
     }
 
     [HttpPut]
-    [UserAccess(UserOperation.Edit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Update(
-        [FromBody] UserCreateUpdateDTO dto) {
-        var updated = await _service.UpdateAsync(dto);
-
-        return updated
-            ? NoContent()
-            : NotFound();
-    }
+    public async Task<IActionResult> Update([FromBody] UserCreateUpdateDTO dto) =>
+        ToActionResult(await _service.UpdateAsync(dto));
 
     [HttpDelete("{id}")]
-    [UserAccess(UserOperation.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Delete(Guid id) {
+    public async Task<IActionResult> Delete(Guid id) =>
+        ToActionResult(await _service.DeleteAsync(id));
 
-        return await _service.DeleteAsync(id) ? NoContent() : NotFound();
-    }
+    private IActionResult ToActionResult(OperationStatus status) => status switch {
+        OperationStatus.Success => NoContent(),
+        OperationStatus.NotFound => NotFound(),
+        _ => Forbid()
+    };
 }
