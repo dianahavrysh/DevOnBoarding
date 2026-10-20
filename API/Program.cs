@@ -5,6 +5,7 @@ using Common.Contexts;
 using Common.Enums;
 using Common.Interfaces;
 using DataLayer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +27,13 @@ if (jwtOptions == null) {
 builder.Services.AddOptions<JwtOptions>()
     .Bind(builder.Configuration.GetSection("Jwt"))
     .ValidateOnStart();
+
+builder.Services.AddCors(options => {
+    options.AddDefaultPolicy(policy => policy
+        .WithOrigins("http://localhost:5002", "https://localhost:7002")
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
 
 builder.Services.AddJwtTokenService();
 
@@ -72,6 +80,8 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+Console.WriteLine("### UPDATED PROGRAM.CS IS RUNNING ###");
+
 if (app.Environment.IsDevelopment()) {
     app.UseDeveloperExceptionPage();
     app.UseSwagger();
@@ -83,6 +93,8 @@ else {
 
 app.UseRouting();
 
+app.UseCors();
+
 app.UseAuthentication();
 app.UseMiddleware<CurrentUserMiddleware>();
 app.UseAuthorization();
@@ -90,4 +102,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-

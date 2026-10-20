@@ -34,6 +34,7 @@ internal sealed class DistributedUserRoleCacheService : IUserRoleCacheService {
         _logger = logger;
     }
 
+    
     /// <summary>
     /// Gets the cached role for a user. If the cache read fails, it is logged and treated as a miss.
     /// </summary>

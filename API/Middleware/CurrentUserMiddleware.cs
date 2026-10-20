@@ -11,6 +11,7 @@ namespace API.Middleware;
 /// <summary>
 /// Middleware that caches the current user's information for the duration of the request.
 /// Skips processing for endpoints that allow anonymous access.
+/// For unauthenticated requests, passes them through without setting current user context.
 /// </summary>
 public sealed class CurrentUserMiddleware {
     private readonly RequestDelegate _next;
@@ -24,8 +25,8 @@ public sealed class CurrentUserMiddleware {
     ITokenClaimsService claims,
     IUserRoleProvider roles,
     CurrentUserContext currentUser) {
-        // Skip processing for anonymous endpoints
-        if (context.GetEndpoint()?.Metadata.GetMetadata<IAllowAnonymous>() is not null) {
+        var endpoint = context.GetEndpoint();
+        if (endpoint?.Metadata.GetMetadata<IAllowAnonymous>() is not null) {
             await _next(context);
             return;
         }

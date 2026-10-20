@@ -39,7 +39,7 @@ internal sealed class UserAccessChecker : IUserAccessChecker {
         var isSelf = _currentUser.UserPK == target.UserPK;
 
         var allowed = operation switch {
-            UserOperation.View => RoleHierarchy.IsAtLeast(requesterRole, targetRole),
+            UserOperation.View => (int)requesterRole >= (int)targetRole,
             UserOperation.Create or UserOperation.AssignRole => canManageTargetRole,
             UserOperation.Edit or UserOperation.Delete => canManageTargetRole || isSelf,
             _ => false

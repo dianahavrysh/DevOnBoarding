@@ -4,7 +4,6 @@ using Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
@@ -28,7 +27,6 @@ public sealed class AuthController : ControllerBase {
     /// </summary>
     /// <param name="loginDto">Login credentials (email and password).</param>
     [HttpPost("login")]
-    [EnableRateLimiting("login")]
     [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

@@ -20,6 +20,14 @@ public class UsersService : IUsersService {
     private readonly IUserAccessChecker _access;
     private readonly IMapper _mapper;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UsersService"/> class.
+    /// </summary>
+    /// <param name="manager">The users manager for data access operations.</param>
+    /// <param name="roleCache">The user role cache service for invalidating cached roles.</param>
+    /// <param name="currentUser">The current user context providing role information.</param>
+    /// <param name="access">The user access checker for authorization operations.</param>
+    /// <param name="mapper">The AutoMapper instance for DTO mapping.</param>
     public UsersService(
         IUsersManager manager,
         IUserRoleCacheService roleCache,
@@ -102,7 +110,6 @@ public class UsersService : IUsersService {
             return OperationStatus.Forbidden;
         }
 
-        // Role change: the requester must also be allowed to assign the NEW role.
         if (dto.RolePK != existing.RolePK
             && !_access.IsAllowed(target with { RolePK = dto.RolePK }, UserOperation.AssignRole)) {
             return OperationStatus.Forbidden;
@@ -134,5 +141,10 @@ public class UsersService : IUsersService {
         return deleted ? OperationStatus.Success : OperationStatus.NotFound;
     }
 
+    /// <summary>
+    /// Converts a domain <see cref="User"/> entity to a <see cref="TargetUserInfo"/> for access checking.
+    /// </summary>
+    /// <param name="user">The user entity to convert.</param>
+    /// <returns>A <see cref="TargetUserInfo"/> containing the user's primary key and role primary key.</returns>
     private static TargetUserInfo ToTarget(User user) => new(user.UserPK, user.RolePK);
 }
