@@ -68,7 +68,6 @@ public static class RoleExtensions
     {
         if (TryParseRole(roleName, out var role) && !string.IsNullOrWhiteSpace(roleName))
         {
-            // Additional check: ensure the input was actually a canonical string, not null/empty
             if (roleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase)
                 || roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase)
                 || roleName.Equals("User", StringComparison.OrdinalIgnoreCase))
@@ -99,4 +98,15 @@ public static class RoleExtensions
         Role.User => "User",
         _ => throw new InvalidOperationException($"Unknown role value: {role}")
     };
+
+    /// <summary>
+    /// Attempts to convert a role primary key (byte) to a Role enum value.
+    /// </summary>
+    /// <param name="rolePK"></param>
+    /// <param name="role"></param>
+    /// <returns></returns>
+    public static bool TryFromPK(byte rolePK, out Role role) {
+        role = (Role)rolePK;
+        return Enum.IsDefined(role);
+    }
 }

@@ -32,8 +32,8 @@ namespace Common.DTOs {
         /// </summary>
         public bool ActiveStatus { get; set; }
 
-        /// <summary>Role id to assign to the user.</summary>
-        public byte RoleId { get; set; }
+        /// <summary>Role pk to assign to the user.</summary>
+        public byte RolePK { get; set; }
 
         /// <summary>
         /// User first name.

@@ -1,13 +1,11 @@
 using System;
 
-namespace Common.DTOs
-{
+namespace Common.DTOs {
     /// <summary>
     /// DTO representing a user for client consumption.
     /// Excludes sensitive fields such as the password. Used for read operations.
     /// </summary>
-    public class UserDTO
-    {
+    public class UserDTO {
         /// <summary>User primary key.</summary>
         public Guid UserPK { get; set; }
         /// <summary>Login user name.</summary>
@@ -25,7 +23,7 @@ namespace Common.DTOs
         /// Role id (dbo.Roles.Id: 1=User, 2=Manager, 3=Administrator), exposed so clients
         /// can pre-select the correct role when editing a user.
         /// </summary>
-        public byte RoleId { get; set; }
+        public byte RolePK { get; set; }
         /// <summary>User first name.</summary>
         public string FirstName { get; set; } = string.Empty;
         /// <summary>User last name (optional).</summary>

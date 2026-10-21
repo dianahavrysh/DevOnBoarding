@@ -1,6 +1,6 @@
 using AutoMapper;
-using Common.Entities;
 using Common.DTOs;
+using Common.Entities;
 
 namespace Services.Mappers {
     public class UserMappingProfile : Profile {
