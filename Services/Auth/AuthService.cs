@@ -7,12 +7,12 @@ using Microsoft.Extensions.Logging;
 namespace Services.Auth;
 
 internal class AuthService : IAuthService {
-    private readonly IUsersManager _usersManager;
+    private readonly IUsersDbManager _usersManager;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
-        IUsersManager usersManager,
+        IUsersDbManager usersManager,
         IJwtTokenService jwtTokenService,
         ILogger<AuthService> logger) {
         _usersManager = usersManager;

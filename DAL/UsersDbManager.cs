@@ -14,7 +14,7 @@ namespace DAL;
 /// <summary>
 /// Database manager for user operations.
 /// </summary>
-public class UsersDbManager : BaseDbManager, IUsersManager
+public class UsersDbManager : BaseDbManager, IUsersDbManager
 {
     public UsersDbManager(
         IDatabaseFactory factory,

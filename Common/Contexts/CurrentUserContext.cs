@@ -20,6 +20,9 @@ public sealed class CurrentUserContext : ICurrentUserContext {
     /// <param name="role">The role of the user.</param>
     public void Set(Guid userPK, Role role) => _value = (userPK, role);
 
+    /// <summary>
+    /// Gets the current user context.
+    /// </summary>
     private (Guid UserPK, Role Role) Value =>
         _value ?? throw new InvalidOperationException(
             "Current user is not initialized for this request.");

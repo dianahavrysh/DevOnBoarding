@@ -11,11 +11,11 @@ namespace Services;
 /// <summary>Resolves a user's role: cache first, database on a miss.</summary>
 internal sealed class UserRoleProvider : IUserRoleProvider {
     private readonly IUserRoleCacheService _cache;
-    private readonly IUsersManager _manager;
+    private readonly IUsersDbManager _manager;
 
     public UserRoleProvider(
         IUserRoleCacheService cache,
-        IUsersManager manager) {
+        IUsersDbManager manager) {
         _cache = cache;
         _manager = manager;
     }

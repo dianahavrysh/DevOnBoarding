@@ -66,7 +66,7 @@ builder.Services.AddScoped<ConnectionContext>(sp => {
 
 builder.Services.AddScoped<IDatabaseFactory, DatabaseFactory>();
 
-builder.Services.AddScoped<IUsersManager, DAL.UsersDbManager>();
+builder.Services.AddScoped<IUsersDbManager, DAL.UsersDbManager>();
 builder.Services.AddUserServices(builder.Configuration);
 
 builder.Services.AddScoped<CurrentUserContext>();
@@ -79,8 +79,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
-Console.WriteLine("### UPDATED PROGRAM.CS IS RUNNING ###");
 
 if (app.Environment.IsDevelopment()) {
     app.UseDeveloperExceptionPage();

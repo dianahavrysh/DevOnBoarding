@@ -14,7 +14,7 @@ namespace Services;
 /// Authorizes every operation against the current user and keeps the role cache consistent.
 /// </summary>
 public class UsersService : IUsersService {
-    private readonly IUsersManager _manager;
+    private readonly IUsersDbManager _manager;
     private readonly IUserRoleCacheService _roleCache;
     private readonly ICurrentUserContext _currentUser;
     private readonly IUserAccessChecker _access;
@@ -29,7 +29,7 @@ public class UsersService : IUsersService {
     /// <param name="access">The user access checker for authorization operations.</param>
     /// <param name="mapper">The AutoMapper instance for DTO mapping.</param>
     public UsersService(
-        IUsersManager manager,
+        IUsersDbManager manager,
         IUserRoleCacheService roleCache,
         ICurrentUserContext currentUser,
         IUserAccessChecker access,

@@ -8,7 +8,7 @@ namespace Common.Interfaces
     /// <summary>
     /// Manager interface for user operations.
     /// </summary>
-    public interface IUsersManager
+    public interface IUsersDbManager
     {
         /// <summary>
         /// Get a user entity by primary key asynchronously.

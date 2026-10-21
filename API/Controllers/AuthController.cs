@@ -30,7 +30,6 @@ public sealed class AuthController : ControllerBase {
     [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginDto loginDto) {
         var token = await _authService.AuthenticateAsync(loginDto.Email, loginDto.Password);
 
@@ -38,7 +37,7 @@ public sealed class AuthController : ControllerBase {
             return Problem(
                 title: "Invalid email or password.",
                 statusCode: StatusCodes.Status401Unauthorized);
-        }
+        }-
 
         return Ok(new LoginResponseDto { Token = token });
     }

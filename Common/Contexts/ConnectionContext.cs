@@ -1,3 +1,5 @@
+using Common.Enums;
+
 namespace Common.Contexts
 {
     /// <summary>
@@ -9,7 +11,7 @@ namespace Common.Contexts
         /// <summary>
         /// The target database provider type for this context.
         /// </summary>
-        public Enums.DbType DbType { get; set; }
+        public DbType DbType { get; set; }
 
         /// <summary>
         /// The connection string to use for creating database connections for this context.

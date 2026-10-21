@@ -4,9 +4,8 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT RolePK
-    FROM dbo.Users
-    WHERE UserPK = @UserPK;
+    SELECT u.RolePK AS RolePK
+    FROM dbo.Users AS u WITH (NOLOCK)
+    WHERE u.UserPK = @UserPK;
 END
 GO
-
