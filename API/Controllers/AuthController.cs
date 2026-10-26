@@ -37,7 +37,7 @@ public sealed class AuthController : ControllerBase {
             return Problem(
                 title: "Invalid email or password.",
                 statusCode: StatusCodes.Status401Unauthorized);
-        }-
+        }
 
         return Ok(new LoginResponseDto { Token = token });
     }
