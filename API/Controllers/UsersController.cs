@@ -1,9 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using API.Attributes;
 using Common.DTOs;
 using Common.Enums;
-using Common.Extensions;
 using Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -14,17 +12,11 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class UsersController : ControllerBase
-{
+public class UsersController : ControllerBase {
     private readonly IUsersService _service;
-    private readonly ITokenClaimsService _tokenClaimsService;
 
-    public UsersController(
-        IUsersService service,
-        ITokenClaimsService tokenClaimsService)
-    {
+    public UsersController(IUsersService service) {
         _service = service;
-        _tokenClaimsService = tokenClaimsService;
     }
 
     [HttpGet("{id}")]
@@ -32,13 +24,14 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetByPK(Guid id)
-    {
-        var dto = await _service.GetByPKAsync(id);
+    public async Task<IActionResult> GetByPK(Guid id) {
+        var result = await _service.GetByPKAsync(id);
 
-        return dto is null
-            ? NotFound()
-            : Ok(dto);
+        return result.Status switch {
+            OperationStatus.Success => Ok(result.Value),
+            OperationStatus.NotFound => NotFound(),
+            _ => Forbid()
+        };
     }
 
     [HttpGet]
@@ -55,22 +48,8 @@ public class UsersController : ControllerBase
         bool searchByFirstName,
         bool searchBySecondName,
         bool includeInactive,
-        bool strictMatch)
-    {
-        var requestingUserRole =
-            _tokenClaimsService.GetRoleFromPrincipal(User);
-
-        if (!RoleExtensions.TryParseRole(
-            requestingUserRole,
-            out var requestingRole))
-        {
-            return Forbid();
-        }
-
-        var requestingRolePK = (byte)requestingRole;
-
+        bool strictMatch) {
         var (items, totalRows) = await _service.GetByPageAsync(
-            requestingRolePK,
             currentPage,
             pageSize,
             sortExpression,
@@ -86,48 +65,40 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost]
-    [UserAccess(UserOperation.Create)]
     [ProducesResponseType(typeof(UserDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Create(
-        [FromBody] UserCreateUpdateDTO dto)
-    {
-        var created = await _service.CreateAsync(dto);
+    public async Task<IActionResult> Create([FromBody] UserCreateUpdateDTO dto) {
+        var result = await _service.CreateAsync(dto);
 
-        return CreatedAtAction(
-            nameof(GetByPK),
-            new { id = created.UserPK },
-            created);
+        return result.Status switch {
+            OperationStatus.Success => CreatedAtAction(
+                nameof(GetByPK), new { id = result.Value!.UserPK }, result.Value),
+            OperationStatus.NotFound => Problem(statusCode: StatusCodes.Status500InternalServerError),
+            _ => Forbid()
+        };
     }
 
     [HttpPut]
-    [UserAccess(UserOperation.Edit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Update(
-        [FromBody] UserCreateUpdateDTO dto)
-    {
-        var updated = await _service.UpdateAsync(dto);
-
-        return updated
-            ? NoContent()
-            : NotFound();
-    }
+    public async Task<IActionResult> Update([FromBody] UserCreateUpdateDTO dto) =>
+        ToActionResult(await _service.UpdateAsync(dto));
 
     [HttpDelete("{id}")]
-    [UserAccess(UserOperation.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Delete(Guid id)
-    {
-        await _service.DeleteAsync(id);
+    public async Task<IActionResult> Delete(Guid id) =>
+        ToActionResult(await _service.DeleteAsync(id));
 
-        return NoContent();
-    }
+    private IActionResult ToActionResult(OperationStatus status) => status switch {
+        OperationStatus.Success => NoContent(),
+        OperationStatus.NotFound => NotFound(),
+        _ => Forbid()
+    };
 }
